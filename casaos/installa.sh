@@ -145,6 +145,15 @@ else
   [ -f "$SRC/Dockerfile" ] || fail "Dockerfile non trovato nel download."
   ok "Scaricato da github.com/$REPO ($BRANCH)"
 fi
+if [ -z "$TOKEN" ] && ! curl -fsS -o /dev/null --max-time 15 "https://api.github.com/repos/$REPO"; then
+  warn "Il repository github.com/$REPO è privato (o GitHub non risponde)."
+  info "Aggiornamenti e download dell'app Android hanno bisogno di un token GitHub di sola lettura"
+  info "(github.com → Settings → Developer settings → Fine-grained tokens → Contents: Read-only)."
+  printf "    Token GitHub (Invio per saltare): " >"$TTY"
+  IFS= read -rs TOKEN <"$TTY" || true
+  printf "\n" >"$TTY"
+  [ -n "$TOKEN" ] || warn "Senza token Sonora funziona, ma non si aggiorna e non scarica l'APK finché il repository è privato."
+fi
 if [ -n "$TOKEN" ]; then
   mkdir -p "$(dirname "$TOKEN_FILE")"
   (umask 077; printf "%s" "$TOKEN" > "$TOKEN_FILE")
