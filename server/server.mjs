@@ -118,19 +118,58 @@ function resolveUrl(id) {
   return p;
 }
 
+// googlevideo throttles long requests to about real-time speed; 1 MB ranges come at full speed (as yt-dlp does).
+const CHUNK = 1 << 20;
+
+/** Byte range asked by the client, clamped to the file: [start, end] inclusive, or null if unsatisfiable. */
+function byteRange(header, total) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(header || '');
+  if (!m || (!m[1] && !m[2])) return [0, total - 1];
+  const start = m[1] ? Number(m[1]) : Math.max(0, total - Number(m[2]));
+  const end = m[1] && m[2] ? Math.min(Number(m[2]), total - 1) : total - 1;
+  return start <= end ? [start, end] : null;
+}
+
 async function stream(id, req, res) {
+  const ac = new AbortController();
+  res.on('close', () => ac.abort());
   for (let attempt = 0; attempt < 2; attempt++) {
     const { url, ready } = await resolveUrl(id);
     if (ready > Date.now()) await new Promise((r) => setTimeout(r, ready - Date.now()));
-    const ac = new AbortController();
-    res.on('close', () => ac.abort());
-    const up = await fetch(url, { headers: req.headers.range ? { range: req.headers.range } : {}, signal: ac.signal });
-    if (up.status === 403 && attempt === 0) { streams.delete(id); continue; }
-    const h = { 'accept-ranges': 'bytes', 'content-type': up.headers.get('content-type') ?? 'audio/mp4' };
-    for (const k of ['content-length', 'content-range']) if (up.headers.get(k)) h[k] = up.headers.get(k);
-    res.writeHead(up.status, h);
-    if (!up.body || req.method === 'HEAD') return res.end();
-    return Readable.fromWeb(up.body).on('error', () => res.destroy()).pipe(res);
+    const params = new URL(url).searchParams;
+    const total = Number(params.get('clen'));
+    if (!total) { // no size in the URL: plain proxy
+      const up = await fetch(url, { headers: req.headers.range ? { range: req.headers.range } : {}, signal: ac.signal });
+      if (up.status === 403 && attempt === 0) { streams.delete(id); continue; }
+      const h = { 'accept-ranges': 'bytes', 'content-type': up.headers.get('content-type') ?? 'audio/mp4' };
+      for (const k of ['content-length', 'content-range']) if (up.headers.get(k)) h[k] = up.headers.get(k);
+      res.writeHead(up.status, h);
+      if (!up.body || req.method === 'HEAD') return res.end();
+      return Readable.fromWeb(up.body).on('error', () => res.destroy()).pipe(res);
+    }
+    const range = byteRange(req.headers.range, total);
+    if (!range) { res.writeHead(416, { 'content-range': `bytes */${total}` }); return res.end(); }
+    const [start, end] = range;
+    const part = (a) => fetch(url, { headers: { range: `bytes=${a}-${Math.min(end, a + CHUNK - 1)}` }, signal: ac.signal });
+    const first = await part(start);
+    if (first.status === 403 && attempt === 0) { streams.delete(id); continue; }
+    if (!first.ok) throw new Error(`googlevideo ${first.status}`);
+    const h = { 'accept-ranges': 'bytes', 'content-type': params.get('mime') || 'audio/mp4', 'content-length': end - start + 1 };
+    if (req.headers.range) h['content-range'] = `bytes ${start}-${end}/${total}`;
+    res.writeHead(req.headers.range ? 206 : 200, h);
+    if (req.method === 'HEAD') { ac.abort(); return res.end(); }
+    try {
+      let up = first;
+      for (let a = start; a <= end; a += CHUNK) {
+        if (a !== start) up = await part(a);
+        if (!up.ok) throw new Error(`googlevideo ${up.status}`);
+        for await (const chunk of up.body) {
+          if (!res.write(chunk)) await new Promise((r) => res.once('drain', r));
+        }
+      }
+      res.end();
+    } catch { res.destroy(); } // client gone or upstream error: close, the player retries
+    return;
   }
   throw new Error('stream refused');
 }
@@ -140,10 +179,15 @@ async function saveJson(file, v) {
   await writeFile(file + '.tmp', JSON.stringify(v));
   await rename(file + '.tmp', file); // atomic: a crash mid-write never corrupts the file
 }
+// Only a missing file means "empty": any other read/parse error throws, so a later save can never
+// overwrite real data with an empty library.
+async function readJson(file, empty) {
+  try { return JSON.parse(await readFile(file, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return empty; throw e; }
+}
 let users = null;
 async function loadUsers() {
   if (users) return users;
-  try { users = JSON.parse(await readFile(USERS, 'utf8')); } catch { users = []; }
+  users = await readJson(USERS, []);
   return users;
 }
 const libs = new Map();
@@ -151,7 +195,7 @@ const libFile = (uid) => `${DATA}/library-${uid}.json`;
 async function loadLib(uid) {
   if (libs.has(uid)) return libs.get(uid);
   let l;
-  try { l = JSON.parse(await readFile(libFile(uid), 'utf8')); } catch { l = {}; }
+  l = await readJson(libFile(uid), {});
   for (const k of ['songs', 'albums', 'artists', 'playlists']) l[k] ??= [];
   libs.set(uid, l);
   return l;

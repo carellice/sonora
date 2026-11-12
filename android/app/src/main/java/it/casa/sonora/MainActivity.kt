@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,7 @@ import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Favorite
@@ -108,6 +110,7 @@ class MainActivity : ComponentActivity() {
         Api.base = prefs.getString("server", "") ?: ""
         Api.user = prefs.getString("user", "") ?: ""
         if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        Downloads.init(this)
         Playback.attach(this)
         setContent { SonoraTheme { Root(prefs) } }
     }
@@ -157,6 +160,7 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
     val nav = rememberNavController()
     var playerOpen by rememberSaveable { mutableStateOf(false) }
     var settings by remember { mutableStateOf(false) }
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(Downloads::chooseFolder) }
     val ctx = LocalContext.current
     LaunchedEffect(Unit) {
         Lib.refresh().onFailure {
@@ -241,6 +245,11 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
             Column {
                 Text("Server: ${Api.base}", color = Dim, fontSize = 13.sp)
                 Spacer(Modifier.height(16.dp))
+                Text("Download", fontWeight = FontWeight.SemiBold)
+                Text(Downloads.folderName()?.let { "Cartella: $it" } ?: "Memoria dell'app (si cancella disinstallando l'app)", color = Dim, fontSize = 13.sp)
+                TextButton(onClick = { pickFolder.launch(null) }) { Text("Scegli una cartella del telefono", color = Accent, fontSize = 16.sp) }
+                if (Downloads.folder != null) TextButton(onClick = { Downloads.chooseFolder(null) }) { Text("Usa la memoria dell'app", color = Accent, fontSize = 16.sp) }
+                Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { settings = false; onChangeProfile() }) { Text("Cambia profilo", color = Accent, fontSize = 16.sp) }
                 TextButton(onClick = { settings = false; onChangeServer() }) { Text("Cambia server", color = Accent, fontSize = 16.sp) }
             }
@@ -304,6 +313,11 @@ fun TrackMenu(nav: NavController, closePlayer: () -> Unit) {
             Lib.scope.launch { Lib.toggleSong(t).onFailure { toast("Operazione non riuscita") } }; close()
         }
         MenuItem(Icons.AutoMirrored.Rounded.PlaylistAdd, "Aggiungi a playlist") { Ui.addToPlaylist = t; close() }
+        when {
+            Downloads.isActive(t.id) -> MenuItem(Icons.Rounded.Close, "Annulla download") { Downloads.cancel(listOf(t)); close() }
+            Downloads.isSaved(t.id) -> MenuItem(Icons.Rounded.Delete, "Rimuovi download") { Downloads.remove(listOf(t)); close() }
+            else -> MenuItem(Icons.Rounded.Download, "Scarica") { Downloads.download(listOf(t)); toast("Download avviato"); close() }
+        }
         req.localPlaylistId?.let { pid ->
             MenuItem(Icons.Rounded.RemoveCircleOutline, "Rimuovi da questa playlist") { Lib.scope.launch { Lib.removeFromPlaylist(pid, t.id) }; close() }
         }

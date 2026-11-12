@@ -50,7 +50,11 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.DownloadDone
+import androidx.compose.material.icons.rounded.DownloadForOffline
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.LibraryAdd
@@ -179,7 +183,7 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
                 Box(
                     Modifier.weight(1f).height(34.dp).clip(RoundedCornerShape(17.dp)).clickable { onSelect(i) },
                     contentAlignment = Alignment.Center,
-                ) { Text(t, color = c, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
+                ) { Text(t, color = c, fontWeight = FontWeight.SemiBold, fontSize = if (tabs.size > 4) 12.sp else 13.sp, maxLines = 1) }
             }
         }
     }
@@ -188,7 +192,8 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
-    val tabs = listOf("Brani", "Album", "Artisti", "Playlist")
+    val dlCount = Downloads.queue.size
+    val tabs = listOf("Brani", "Album", "Artisti", "Playlist", if (dlCount > 0) "↓ $dlCount" else "Scaricati")
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var filter by rememberSaveable { mutableStateOf("") }
     var newPlaylist by remember { mutableStateOf(false) }
@@ -207,7 +212,7 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                 IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, "Impostazioni", tint = Dim) }
             }
             SegmentedTabs(tabs, tab, { tab = it; filter = "" }, Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
-            SearchField(filter, { filter = it }, "Cerca in ${tabs[tab].lowercase()}", Modifier.padding(horizontal = 16.dp))
+            SearchField(filter, { filter = it }, "Cerca in ${if (tab == 4) "scaricati" else tabs[tab].lowercase()}", Modifier.padding(horizontal = 16.dp))
             Spacer(Modifier.height(6.dp))
             AnimatedContent(
                 tab, label = "libtab",
@@ -242,6 +247,33 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                         if (lib.artists.isEmpty()) EmptyState(Icons.Rounded.Person, "Nessun artista", "Gli artisti dei brani salvati e quelli che segui compaiono qui.")
                         else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                             items(artists, key = { it.id }) { a -> ArtistRow(a) { nav.navigate("artist/${a.id}") } }
+                        }
+                    }
+                    4 -> {
+                        val all = Downloads.saved
+                        val songs = all.filter { filter.isBlank() || it.title.has(filter) || it.artist.has(filter) || (it.album ?: "").has(filter) }
+                        val queue = Downloads.queue
+                        if (queue.isNotEmpty()) LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                            item { DownloadQueueHeader() }
+                            items(queue, key = { "q-${it.id}" }) { t -> DownloadingRow(t) }
+                            if (all.isNotEmpty()) item { SectionTitle("Scaricati") }
+                            itemsIndexed(songs, key = { _, s -> s.id }) { i, s ->
+                                TrackRow(s, onClick = { Playback.play(songs, i) }, onMore = { Ui.menu = MenuReq(s) })
+                            }
+                        }
+                        else if (all.isEmpty()) EmptyState(Icons.Rounded.DownloadForOffline, "Nessun brano scaricato", "Dal menu ⋮ di un brano o con il pulsante su album e playlist: li ascolti anche senza connessione.")
+                        else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                            item {
+                                val mb = remember(all.size) { Downloads.sizeBytes() / 1_048_576 }
+                                Text(
+                                    "${if (all.size == 1) "1 brano" else "${all.size} brani"} • $mb MB • ${Downloads.folderName() ?: "memoria dell'app"}",
+                                    color = Dim, fontSize = 13.sp, modifier = Modifier.padding(start = 20.dp, top = 4.dp),
+                                )
+                            }
+                            item { PlayShuffleRow(songs) }
+                            itemsIndexed(songs, key = { _, s -> s.id }) { i, s ->
+                                TrackRow(s, onClick = { Playback.play(songs, i) }, onMore = { Ui.menu = MenuReq(s) })
+                            }
                         }
                     }
                     else -> {
@@ -283,6 +315,47 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
     if (newPlaylist) NewPlaylistDialog(onDismiss = { newPlaylist = false }) { name ->
         newPlaylist = false
         Lib.scope.launch { Lib.createPlaylist(name) }
+    }
+}
+
+/** "In download: 3 brani · 42%" with the overall bar and "Annulla tutti". */
+@Composable
+fun DownloadQueueHeader() {
+    val p by androidx.compose.animation.core.animateFloatAsState(Downloads.queueProgress(), label = "dlq")
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "In download: ${Downloads.queue.size} ${if (Downloads.queue.size == 1) "brano" else "brani"} • ${(p * 100).toInt()}%",
+                fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = { Downloads.cancelAll() }) { Text("Annulla tutti", color = Accent) }
+        }
+        LinearProgressIndicator(
+            progress = { p }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+            color = Accent, trackColor = Card, drawStopIndicator = {},
+        )
+    }
+}
+
+/** A song being downloaded: its own progress bar and a button to stop it. */
+@Composable
+fun DownloadingRow(t: Track) {
+    val raw = Downloads.active[t.id] ?: 0f
+    val p by androidx.compose.animation.core.animateFloatAsState(raw, label = "dl")
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Artwork(t.thumb, Modifier.size(44.dp))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(t.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(6.dp))
+            if (raw == 0f) LinearProgressIndicator(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)), color = Accent2, trackColor = Card)
+            else LinearProgressIndicator(
+                progress = { p }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                color = Accent, trackColor = Card, drawStopIndicator = {},
+            )
+            Text(if (raw == 0f) "In attesa del server…" else "${(raw * 100).toInt()}%", color = Dim, fontSize = 12.sp)
+        }
+        IconButton(onClick = { Downloads.cancel(listOf(t)) }) { Icon(Icons.Rounded.Close, "Annulla download", tint = Dim) }
     }
 }
 
@@ -456,7 +529,11 @@ fun CollectionScreen(
                     val min = tracks.sumOf { it.duration } / 60
                     Text((if (tracks.size == 1) "1 brano" else "${tracks.size} brani") + if (min > 0) " • $min min" else "", color = Dim, fontSize = 13.sp)
                     Spacer(Modifier.height(14.dp))
-                    actions()
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        actions()
+                        DownloadAllButton(tracks)
+                    }
+                    Spacer(Modifier.height(6.dp))
                     PlayShuffleRow(tracks)
                 }
             }
@@ -469,6 +546,27 @@ fun CollectionScreen(
             }
         }
         BackButton(nav)
+    }
+}
+
+/** Saves every song of an album/playlist on the phone; once all are saved, removes them. */
+@Composable
+fun DownloadAllButton(tracks: List<Track>) {
+    if (tracks.isEmpty()) return
+    val all = Downloads.allSaved(tracks)
+    val busy = tracks.any { Downloads.isActive(it.id) }
+    IconButton(
+        onClick = { if (busy) Downloads.cancel(tracks) else if (all) Downloads.remove(tracks) else Downloads.download(tracks) },
+        modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f)),
+    ) {
+        when {
+            busy -> Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.size(30.dp), color = Accent, strokeWidth = 2.5.dp)
+                Icon(Icons.Rounded.Close, "Annulla download", tint = Color.White, modifier = Modifier.size(16.dp))
+            }
+            all -> Icon(Icons.Rounded.DownloadDone, "Rimuovi i download", tint = Accent)
+            else -> Icon(Icons.Rounded.Download, "Scarica tutto", tint = Color.White)
+        }
     }
 }
 
@@ -491,7 +589,7 @@ fun AlbumScreen(id: String, nav: NavController) {
         CollectionScreen(
             nav, a.title, listOfNotNull(a.artist.ifEmpty { null }, a.year).joinToString(" • "), a.thumb, p.tracks, numbered = true,
             onSubtitle = a.artistId?.let { aid -> { nav.navigate("artist/$aid") } },
-            actions = { HeartButton(Lib.hasAlbum(a.id)) { Lib.scope.launch { Lib.toggleAlbum(a) } }; Spacer(Modifier.height(6.dp)) },
+            actions = { HeartButton(Lib.hasAlbum(a.id)) { Lib.scope.launch { Lib.toggleAlbum(a) } } },
         )
     }
 }
@@ -513,7 +611,6 @@ fun PlaylistScreen(id: String, nav: NavController) {
                     },
                     modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f)),
                 ) { Icon(Icons.Rounded.LibraryAdd, "Salva in libreria", tint = Color.White) }
-                Spacer(Modifier.height(6.dp))
             },
         )
     }
@@ -532,7 +629,6 @@ fun LocalPlaylistScreen(id: String, nav: NavController) {
             IconButton(onClick = { confirm = true }, modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f))) {
                 Icon(Icons.Rounded.Delete, "Elimina playlist", tint = Color.White)
             }
-            Spacer(Modifier.height(6.dp))
         },
     )
     if (p.tracks.isEmpty()) Box(Modifier.fillMaxSize().padding(top = 300.dp)) {

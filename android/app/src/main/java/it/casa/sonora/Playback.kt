@@ -18,6 +18,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -43,8 +44,9 @@ class PlaybackService : MediaSessionService() {
             )
             // First play of a track waits for the server to resolve it (~10s): the 8s default timeout is too short.
             .setMediaSourceFactory(
+                // DefaultDataSource: streams over HTTP, downloads from file:// (app storage) or content:// (picked folder)
                 DefaultMediaSourceFactory(this).setDataSourceFactory(
-                    DefaultHttpDataSource.Factory().setConnectTimeoutMs(30_000).setReadTimeoutMs(60_000),
+                    DefaultDataSource.Factory(this, DefaultHttpDataSource.Factory().setConnectTimeoutMs(30_000).setReadTimeoutMs(60_000)),
                 ),
             )
             .setHandleAudioBecomingNoisy(true)
@@ -155,7 +157,7 @@ object Playback {
     }
 
     private fun item(t: Track): MediaItem {
-        val uri = Uri.parse(Api.streamUrl(t.id))
+        val uri = Downloads.uriFor(t)
         return MediaItem.Builder()
             .setMediaId(t.id)
             .setUri(uri)

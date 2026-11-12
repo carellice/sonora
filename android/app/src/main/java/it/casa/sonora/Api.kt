@@ -152,7 +152,7 @@ object Api {
     suspend fun createUser(name: String) = profiles(req("POST", "/api/users", JSONObject().put("name", name)))
     suspend fun deleteUser(id: String) = profiles(req("DELETE", "/api/users/${enc(id)}"))
 
-    suspend fun library() = Library.from(obj("/api/library"))
+    suspend fun libraryJson() = req("GET", "/api/library")
     suspend fun libAdd(kind: String, item: JSONObject) = Library.from(JSONObject(req("POST", "/api/library/$kind", item)))
     suspend fun libRemove(kind: String, id: String) = Library.from(JSONObject(req("DELETE", "/api/library/$kind/${enc(id)}")))
     suspend fun createPlaylist(name: String) = Library.from(JSONObject(req("POST", "/api/playlists", JSONObject().put("name", name))))
@@ -176,9 +176,19 @@ object Lib {
 
     fun clear() { data = Library.EMPTY }
 
+    // Last library from the server, per profile: opening the app without a connection still shows it.
+    // shortcut: refreshed only here, not after each save; fine since every launch refreshes it.
+    private fun cacheFile() = java.io.File(Downloads.appDir, "library-${Api.user}.json")
+
     suspend fun refresh(): Result<Unit> {
         loading = true
-        return run { Api.library() }.also { loading = false }
+        return runCatching {
+            val raw = Api.libraryJson()
+            data = Library.from(JSONObject(raw))
+            withContext(Dispatchers.IO) { cacheFile().writeText(raw) }
+        }.onFailure {
+            if (data === Library.EMPTY) runCatching { data = Library.from(JSONObject(withContext(Dispatchers.IO) { cacheFile().readText() })) }
+        }.also { loading = false }
     }
 
     fun hasSong(id: String) = data.songs.any { it.id == id }

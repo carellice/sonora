@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Search
@@ -182,7 +183,20 @@ fun TrackRow(
                 maxLines = 1, overflow = TextOverflow.Ellipsis, color = Dim, fontSize = 13.sp,
             )
         }
+        DownloadMark(t.id)
         IconButton(onClick = onMore) { Icon(Icons.Rounded.MoreVert, "Opzioni", tint = Dim) }
+    }
+}
+
+/** Small download state next to a song: progress while downloading, a check when saved on the phone. */
+@Composable
+fun DownloadMark(id: String) {
+    val progress = Downloads.active[id]
+    when {
+        progress != null -> androidx.compose.material3.CircularProgressIndicator(
+            progress = { progress }, modifier = Modifier.size(18.dp), color = Accent, strokeWidth = 2.dp, trackColor = Dim.copy(alpha = .25f),
+        )
+        Downloads.isSaved(id) -> Icon(Icons.Rounded.DownloadDone, "Scaricato", tint = Accent, modifier = Modifier.size(18.dp))
     }
 }
 
