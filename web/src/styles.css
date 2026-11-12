@@ -109,9 +109,10 @@ h1, h2, h3 { margin: 0; }
 .progress-bar { height: 100%; width: 40%; background: var(--accent); animation: bar 1s ease-in-out infinite; }
 @keyframes bar { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
 .section { font-size: 20px; font-weight: 700; padding: 18px 20px 8px; }
-.back-btn { position: sticky; top: calc(8px + var(--safe-top)); left: 8px; margin: calc(8px + var(--safe-top)) 0 0 8px; z-index: 5; background: rgba(0,0,0,.35) !important; backdrop-filter: blur(10px); float: left; }
+/* sticky over the page; the negative bottom margin takes it out of the flow so it never pushes the header */
+.back-btn { position: sticky; top: calc(8px + var(--safe-top)); margin: calc(8px + var(--safe-top)) 0 calc(-52px - var(--safe-top)) 8px; z-index: 5; background: rgba(0,0,0,.35) !important; backdrop-filter: blur(10px); }
 
-.collection-head { --tint: #5b3fa8; display: flex; flex-direction: column; align-items: center; text-align: center; padding: calc(56px + var(--safe-top)) 0 4px; margin-top: calc(-60px - var(--safe-top));
+.collection-head { --tint: #5b3fa8; display: flex; flex-direction: column; align-items: center; text-align: center; padding: calc(56px + var(--safe-top)) 0 4px;
   background: linear-gradient(to bottom, var(--tint), var(--bg)); transition: --tint .7s; }
 .collection-art { width: 240px; max-width: 70vw; filter: drop-shadow(0 18px 30px rgba(0,0,0,.5)); will-change: transform; }
 .collection-art .art, .collection-art .mosaic { border-radius: 18px; }
@@ -123,7 +124,7 @@ h1, h2, h3 { margin: 0; }
 .collection-actions { margin: 14px 0 6px; display: flex; gap: 8px; }
 .collection-info .play-row { width: 100%; }
 
-.artist-hero { position: relative; height: 340px; overflow: hidden; margin-top: calc(-52px - var(--safe-top)); }
+.artist-hero { position: relative; height: 340px; overflow: hidden; }
 .artist-img { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; will-change: transform; }
 .artist-fade { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(11,11,16,.4), var(--bg)); }
 .artist-name { position: absolute; left: 20px; right: 20px; bottom: 16px; display: flex; align-items: center; gap: 12px; }
@@ -229,12 +230,12 @@ h1, h2, h3 { margin: 0; }
 .shell.wide .main { background: #121119; border-radius: 16px; }
 .shell.wide .mobile-only { display: none; }
 .shell.wide .head { padding-top: 24px; }
-.shell.wide .collection-head { flex-direction: row; align-items: flex-end; text-align: left; gap: 28px; padding: 72px 32px 12px; margin-top: -60px; }
+.shell.wide .collection-head { flex-direction: row; align-items: flex-end; text-align: left; gap: 28px; padding: 72px 32px 12px; }
 .shell.wide .collection-art { width: 220px; flex: none; }
 .shell.wide .collection-info { align-items: flex-start; }
 .shell.wide .collection-info h2 { font-size: 44px; margin: 0 0 6px; line-height: 1.05; }
 .shell.wide .collection-info .play-row { padding: 8px 0; max-width: 420px; }
-.shell.wide .artist-hero { height: 380px; margin-top: -60px; }
+.shell.wide .artist-hero { height: 380px; }
 .shell.wide .artist-name h1 { font-size: 64px; }
 .shell.wide .play-row { max-width: 460px; }
 .shell.wide .pad { max-width: 760px; }

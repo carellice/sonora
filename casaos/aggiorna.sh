@@ -5,6 +5,7 @@
 #   sudo sonora-aggiorna              aggiorna se c'è una versione nuova (e una volta a settimana yt-dlp)
 #   sudo sonora-aggiorna --controlla  dice soltanto se c'è una versione nuova
 #   sudo sonora-aggiorna --forza      ricostruisce Sonora anche se la versione è la stessa
+#   sudo sonora-aggiorna --token      imposta (o cambia) il token GitHub, poi aggiorna
 #
 # La versione è quella di server/package.json: cambiarla su GitHub è il rilascio (server, web app e APK).
 # Prima di aggiornare salva una copia dei dati; se la nuova versione non parte, torna a quella di prima.
@@ -56,7 +57,8 @@ main() {
     "") ;;
     --controlla|--check) mode=check ;;
     --forza|--force) mode=force ;;
-    *) fail "Opzione sconosciuta: $1 (usa --controlla oppure --forza)" ;;
+    --token) mode=token ;;
+    *) fail "Opzione sconosciuta: $1 (usa --controlla, --forza oppure --token)" ;;
   esac
 
   [ "$(id -u)" -eq 0 ] || fail "Lancia come amministratore: sudo sonora-aggiorna"
@@ -77,6 +79,22 @@ main() {
   set -a; . "$ENV_FILE"; set +a
   TOKEN=""
   [ -r "$TOKEN_FILE" ] && TOKEN="$(cat "$TOKEN_FILE")"
+
+  # Token per il repository privato: serve agli aggiornamenti (qui) e al server per scaricare l'APK (.env).
+  if [ "$mode" = token ]; then
+    [ -r /dev/tty ] || fail "Serve un terminale per inserire il token."
+    printf "    Token GitHub di sola lettura (Invio per toglierlo): " >/dev/tty
+    IFS= read -rs TOKEN </dev/tty || true
+    printf "
+" >/dev/tty
+    mkdir -p "$(dirname "$TOKEN_FILE")"
+    if [ -n "$TOKEN" ]; then (umask 077; printf "%s" "$TOKEN" > "$TOKEN_FILE"); else rm -f "$TOKEN_FILE"; fi
+    sed -i '/^GITHUB_TOKEN=/d' "$ENV_FILE"
+    echo "GITHUB_TOKEN=$TOKEN" >> "$ENV_FILE"
+    recreate || true
+    ok "Token salvato"
+    mode=update
+  fi
 
   # Un aggiornamento alla volta, per esempio il timer e un lancio a mano.
   if command -v flock >/dev/null; then

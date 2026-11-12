@@ -56,6 +56,7 @@ successivi in coda vengono preparati in anticipo e partono subito.
 sudo sonora-aggiorna              # aggiorna se c'è una versione nuova
 sudo sonora-aggiorna --controlla  # dice soltanto se c'è una versione nuova
 sudo sonora-aggiorna --forza      # ricostruisce anche se la versione è la stessa
+sudo sonora-aggiorna --token      # imposta o cambia il token GitHub (repository privato)
 ```
 
 Se all'installazione hai scelto gli aggiornamenti automatici, il controllo avviene ogni notte verso

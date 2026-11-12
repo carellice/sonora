@@ -22,12 +22,12 @@ export function IconButton({ name, label, onClick, size = 24, className = '', ac
 }
 
 export function Artwork({ url, size, radius = 10, icon = 'music_note', className = '', style }) {
-  const [loaded, setLoaded] = useState(false)
-  useEffect(() => setLoaded(false), [url])
+  // the url that finished loading: a cached image fires onLoad before any effect could reset a flag
+  const [loaded, setLoaded] = useState(null)
   return (
     <div className={`art ${className}`} style={{ width: size, height: size, borderRadius: radius, ...style }}>
       <Icon name={icon} className="art-ph" />
-      {url && <img src={url} alt="" loading="lazy" onLoad={() => setLoaded(true)} style={{ opacity: loaded ? 1 : 0 }} />}
+      {url && <img src={url} alt="" loading="lazy" onLoad={() => setLoaded(url)} style={{ opacity: loaded === url ? 1 : 0 }} />}
     </div>
   )
 }
