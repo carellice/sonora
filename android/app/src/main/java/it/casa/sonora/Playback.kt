@@ -199,6 +199,20 @@ object Playback {
         }
     }
 
+    /** Artist's "Casuale": its popular songs shuffled at once, then all its other songs, looping forever. */
+    fun shuffleAll(first: List<Track>, more: suspend () -> List<Track>) {
+        play(first, shuffled = true)
+        controller?.repeatMode = Player.REPEAT_MODE_ALL
+        scope.launch {
+            runCatching { more() }.onSuccess { all ->
+                val c = controller ?: return@onSuccess
+                val have = first.map { it.id }.toSet()
+                // only if the queue is still this one
+                if (c.mediaItemCount == first.size && c.currentMediaItem?.mediaId in have) c.addMediaItems(all.filter { it.id !in have }.shuffled().map(::item))
+            }
+        }
+    }
+
     fun playNext(t: Track) {
         val c = controller ?: return
         if (c.mediaItemCount == 0) return play(listOf(t))

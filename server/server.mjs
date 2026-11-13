@@ -79,6 +79,7 @@ async function artist(id) {
   const own = (x) => ({ ...x, artist: x.artist || name, artistId: x.artistId || id });
   return {
     id, name, thumb: thumbOf(a.header),
+    songsId: top?.title?.endpoint?.payload?.browseId?.replace(/^VL/, '') ?? null, // playlist with all the artist's songs
     songs: (top?.contents ?? []).map((i) => track(i, { artist: name, artistId: id })).filter(Boolean),
     albums: (shelf(/^album/i)?.contents ?? []).map(albumItem).map(own),
     singles: (shelf(/single/i)?.contents ?? []).map(albumItem).map(own),
@@ -88,9 +89,11 @@ async function artist(id) {
 async function playlist(id) {
   const p = await (await yt()).music.getPlaylist(id);
   const h = p.header ?? {};
+  const all = [...(p.items ?? p.contents ?? [])];
+  for (let c = p; c.has_continuation && all.length < 1000;) { c = await c.getContinuation(); all.push(...(c.items ?? c.contents ?? [])); }
   return {
     id, title: h.title?.toString() ?? '', author: (h.strapline_text_one?.toString() ?? '').replace(/^N\/A$/, ''), thumb: thumbOf(h),
-    tracks: (p.items ?? p.contents ?? []).map((i) => track(i)).filter(Boolean),
+    tracks: all.map((i) => track(i)).filter(Boolean),
   };
 }
 

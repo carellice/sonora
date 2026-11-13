@@ -70,7 +70,7 @@ data class Profile(val id: String, val name: String)
 data class ApkInfo(val version: String, val versionCode: Long)
 
 class AlbumPage(val album: Album, val tracks: List<Track>)
-class ArtistPage(val artist: Artist, val songs: List<Track>, val albums: List<Album>, val singles: List<Album>)
+class ArtistPage(val artist: Artist, val songs: List<Track>, val albums: List<Album>, val singles: List<Album>, val songsId: String?)
 class PlaylistPage(val playlist: Playlist, val tracks: List<Track>)
 
 fun JSONObject.str(k: String): String? = if (isNull(k)) null else optString(k).ifEmpty { null }
@@ -130,7 +130,7 @@ object Api {
         val o = obj("/api/artist/${enc(id)}")
         return ArtistPage(
             Artist.from(o), o.getJSONArray("songs").map(Track::from),
-            o.getJSONArray("albums").map(Album::from), o.getJSONArray("singles").map(Album::from),
+            o.getJSONArray("albums").map(Album::from), o.getJSONArray("singles").map(Album::from), o.str("songsId"),
         )
     }
 

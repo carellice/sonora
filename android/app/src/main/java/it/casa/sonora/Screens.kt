@@ -361,10 +361,10 @@ fun DownloadingRow(t: Track) {
 }
 
 @Composable
-fun PlayShuffleRow(tracks: List<Track>) {
+fun PlayShuffleRow(tracks: List<Track>, onShuffle: () -> Unit = { Playback.play(tracks, shuffled = true) }) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         GradientButton("Riproduci", Icons.Rounded.PlayArrow, Modifier.weight(1f)) { Playback.play(tracks) }
-        SoftButton("Casuale", Icons.Rounded.Shuffle, Modifier.weight(1f)) { Playback.play(tracks, shuffled = true) }
+        SoftButton("Casuale", Icons.Rounded.Shuffle, Modifier.weight(1f)) { onShuffle() }
     }
 }
 
@@ -670,7 +670,9 @@ fun ArtistScreen(id: String, nav: NavController) {
                     }
                 }
                 if (p.songs.isNotEmpty()) {
-                    item { PlayShuffleRow(p.songs) }
+                    item {
+                        PlayShuffleRow(p.songs) { Playback.shuffleAll(p.songs) { p.songsId?.let { Api.playlist(it).tracks }.orEmpty() } }
+                    }
                     item { SectionTitle("Brani popolari") }
                     itemsIndexed(p.songs, key = { _, t -> "s-${t.id}" }) { i, t ->
                         TrackRow(t, onClick = { Playback.play(p.songs, i) }, onMore = { Ui.menu = MenuReq(t) })
