@@ -120,15 +120,17 @@ const streams = new Map(); // videoId -> { url, exp, issued } | Promise
 function resolveUrl(id) {
   const c = streams.get(id);
   if (c && (c.then || c.exp > Date.now())) return c.then ? c : Promise.resolve(c);
-  const p = new Promise((ok, ko) =>
-    execFile('yt-dlp', ['-f', '140/bestaudio[ext=m4a]/bestaudio', '-g', '--no-playlist', `https://music.youtube.com/watch?v=${id}`],
-      { timeout: 60000 }, (err, out) => {
-        const url = out?.trim().split('\n')[0];
-        if (err || !url) { streams.delete(id); return ko(err ?? new Error('no url')); }
-        const exp = Number(new URL(url).searchParams.get('expire')) * 1000 || Date.now() + 3 * 3600e3;
-        const v = { url, exp: exp - 10 * 60e3, issued: Date.now() };
-        streams.set(id, v); ok(v);
-      }));
+  // visionos first: its URLs work at once and for the whole file, the tv client's often answer 403 for tens of seconds.
+  const ytdlp = (extra) => new Promise((ok, ko) =>
+    execFile('yt-dlp', [...extra, '-f', '140/bestaudio[ext=m4a]/bestaudio', '-g', '--no-playlist', `https://music.youtube.com/watch?v=${id}`],
+      { timeout: 60000 }, (err, out) => { const url = out?.trim().split('\n')[0]; err || !url ? ko(err ?? new Error('no url')) : ok(url); }));
+  const p = ytdlp(['--extractor-args', 'youtube:player_client=visionos']).catch(() => ytdlp([])).then(
+    (url) => {
+      const exp = Number(new URL(url).searchParams.get('expire')) * 1000 || Date.now() + 3 * 3600e3;
+      const v = { url, exp: exp - 10 * 60e3, issued: Date.now() };
+      streams.set(id, v); return v;
+    },
+    (err) => { streams.delete(id); throw err; });
   streams.set(id, p);
   return p;
 }
