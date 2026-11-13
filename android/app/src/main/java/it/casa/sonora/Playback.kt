@@ -20,6 +20,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaController
@@ -42,7 +43,9 @@ class PlaybackService : MediaSessionService() {
                 AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
                 true,
             )
-            // First play of a track waits for the server to resolve it (~10s): the 8s default timeout is too short.
+            // Start after 1s of audio instead of 2.5s: the server sends the first MB at LAN speed.
+            .setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(50_000, 50_000, 1_000, 2_000).build())
+            // A seek far into a track not yet resolved waits for yt-dlp (a few s): the 8s default timeout is too short.
             .setMediaSourceFactory(
                 // DefaultDataSource: streams over HTTP, downloads from file:// (app storage) or content:// (picked folder)
                 DefaultMediaSourceFactory(this).setDataSourceFactory(

@@ -100,22 +100,50 @@ async function radio(videoId) {
 }
 
 // ---------- streaming ----------
-const streams = new Map(); // videoId -> { url, exp } | Promise
+// Two URLs for the same file (itag 140). youtubei.js's ANDROID_VR one comes in ~0.2s, but without a PO token
+// googlevideo serves only its first ~1 MB (about a minute of audio). yt-dlp's serves the whole file but takes
+// ~5s to resolve, plus ~2s before googlevideo accepts it. Playback starts on the first while the second resolves.
+const FAST_LIMIT = 1 << 20;
+const fasts = new Map(); // videoId -> Promise<{ url, total, mime } | null>
+function fastUrl(id) {
+  if (!fasts.has(id)) {
+    fasts.set(id, yt().then((y) => y.getStreamingData(id, { type: 'audio', format: 'mp4', itag: 140, client: 'ANDROID_VR' })).then((f) => {
+      const q = f.url ? new URL(f.url).searchParams : null;
+      return q?.get('clen') ? { url: f.url, total: Number(q.get('clen')), mime: q.get('mime') } : null;
+    }).catch(() => null)); // no fast URL: everything comes from yt-dlp's
+    setTimeout(() => fasts.delete(id), 3600e3).unref(); // the URLs last ~6h
+  }
+  return fasts.get(id);
+}
+
+const streams = new Map(); // videoId -> { url, exp, issued } | Promise
 function resolveUrl(id) {
   const c = streams.get(id);
   if (c && (c.then || c.exp > Date.now())) return c.then ? c : Promise.resolve(c);
   const p = new Promise((ok, ko) =>
-    execFile('yt-dlp', ['-f', 'bestaudio[ext=m4a]/bestaudio', '-g', '--no-playlist', `https://music.youtube.com/watch?v=${id}`],
+    execFile('yt-dlp', ['-f', '140/bestaudio[ext=m4a]/bestaudio', '-g', '--no-playlist', `https://music.youtube.com/watch?v=${id}`],
       { timeout: 60000 }, (err, out) => {
         const url = out?.trim().split('\n')[0];
         if (err || !url) { streams.delete(id); return ko(err ?? new Error('no url')); }
         const exp = Number(new URL(url).searchParams.get('expire')) * 1000 || Date.now() + 3 * 3600e3;
-        // googlevideo answers 403 until ~5s after the URL is issued (yt-dlp: "Sleeping 5.00 seconds as required by the site")
-        const v = { url, exp: exp - 10 * 60e3, ready: Date.now() + 5500 };
+        const v = { url, exp: exp - 10 * 60e3, issued: Date.now() };
         streams.set(id, v); ok(v);
       }));
   streams.set(id, p);
   return p;
+}
+
+/** GET on yt-dlp's URL. googlevideo answers 403 for a few seconds after the URL is issued, and once it has expired. */
+async function fetchFull(id, headers, signal) {
+  for (let refreshed = false; ;) {
+    const { url, issued } = await resolveUrl(id);
+    const r = await fetch(url, { headers, signal });
+    if (r.status !== 403) return r;
+    await r.body?.cancel();
+    if (Date.now() - issued < 10e3) await new Promise((ok) => setTimeout(ok, 300));
+    else if (!refreshed) { refreshed = true; streams.delete(id); }
+    else return r;
+  }
 }
 
 // googlevideo throttles long requests to about real-time speed; 1 MB ranges come at full speed (as yt-dlp does).
@@ -133,45 +161,53 @@ function byteRange(header, total) {
 async function stream(id, req, res) {
   const ac = new AbortController();
   res.on('close', () => ac.abort());
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const { url, ready } = await resolveUrl(id);
-    if (ready > Date.now()) await new Promise((r) => setTimeout(r, ready - Date.now()));
-    const params = new URL(url).searchParams;
-    const total = Number(params.get('clen'));
-    if (!total) { // no size in the URL: plain proxy
-      const up = await fetch(url, { headers: req.headers.range ? { range: req.headers.range } : {}, signal: ac.signal });
-      if (up.status === 403 && attempt === 0) { streams.delete(id); continue; }
-      const h = { 'accept-ranges': 'bytes', 'content-type': up.headers.get('content-type') ?? 'audio/mp4' };
-      for (const k of ['content-length', 'content-range']) if (up.headers.get(k)) h[k] = up.headers.get(k);
-      res.writeHead(up.status, h);
-      if (!up.body || req.method === 'HEAD') return res.end();
-      return Readable.fromWeb(up.body).on('error', () => res.destroy()).pipe(res);
-    }
-    const range = byteRange(req.headers.range, total);
-    if (!range) { res.writeHead(416, { 'content-range': `bytes */${total}` }); return res.end(); }
-    const [start, end] = range;
-    const part = (a) => fetch(url, { headers: { range: `bytes=${a}-${Math.min(end, a + CHUNK - 1)}` }, signal: ac.signal });
-    const first = await part(start);
-    if (first.status === 403 && attempt === 0) { streams.delete(id); continue; }
-    if (!first.ok) throw new Error(`googlevideo ${first.status}`);
-    const h = { 'accept-ranges': 'bytes', 'content-type': params.get('mime') || 'audio/mp4', 'content-length': end - start + 1 };
-    if (req.headers.range) h['content-range'] = `bytes ${start}-${end}/${total}`;
-    res.writeHead(req.headers.range ? 206 : 200, h);
-    if (req.method === 'HEAD') { ac.abort(); return res.end(); }
-    try {
-      let up = first;
-      for (let a = start; a <= end; a += CHUNK) {
-        if (a !== start) up = await part(a);
-        if (!up.ok) throw new Error(`googlevideo ${up.status}`);
-        for await (const chunk of up.body) {
-          if (!res.write(chunk)) await new Promise((r) => res.once('drain', r));
-        }
-      }
-      res.end();
-    } catch { res.destroy(); } // client gone or upstream error: close, the player retries
-    return;
+  resolveUrl(id).catch(() => {}); // starts now, ready by the time the fast URL's part is played
+  const fast = await fastUrl(id);
+  let total = fast?.total, mime = fast?.mime;
+  if (!fast) {
+    const q = new URL((await resolveUrl(id)).url).searchParams;
+    total = Number(q.get('clen')); mime = q.get('mime');
   }
-  throw new Error('stream refused');
+  if (!total) { // no size in the URL: plain proxy
+    const up = await fetchFull(id, req.headers.range ? { range: req.headers.range } : {}, ac.signal);
+    const h = { 'accept-ranges': 'bytes', 'content-type': up.headers.get('content-type') ?? 'audio/mp4' };
+    for (const k of ['content-length', 'content-range']) if (up.headers.get(k)) h[k] = up.headers.get(k);
+    res.writeHead(up.status, h);
+    if (!up.body || req.method === 'HEAD') return res.end();
+    return Readable.fromWeb(up.body).on('error', () => res.destroy()).pipe(res);
+  }
+  const range = byteRange(req.headers.range, total);
+  if (!range) { res.writeHead(416, { 'content-range': `bytes */${total}` }); return res.end(); }
+  const [start, end] = range;
+  const stop = (a) => Math.min(end, fast && a < FAST_LIMIT ? FAST_LIMIT - 1 : a + CHUNK - 1);
+  const part = async (a) => {
+    const headers = { range: `bytes=${a}-${stop(a)}` };
+    if (fast && a < FAST_LIMIT) {
+      const r = await fetch(fast.url, { headers, signal: ac.signal });
+      if (r.ok) return r;
+      await r.body?.cancel();
+    }
+    const r = await fetchFull(id, headers, ac.signal);
+    if (fast && r.ok && Number(r.headers.get('content-range')?.split('/')[1]) !== total) throw new Error('yt-dlp picked another file');
+    return r;
+  };
+  const first = await part(start);
+  if (!first.ok) throw new Error(`googlevideo ${first.status}`);
+  const h = { 'accept-ranges': 'bytes', 'content-type': mime || 'audio/mp4', 'content-length': end - start + 1 };
+  if (req.headers.range) h['content-range'] = `bytes ${start}-${end}/${total}`;
+  res.writeHead(req.headers.range ? 206 : 200, h);
+  if (req.method === 'HEAD') { ac.abort(); return res.end(); }
+  try {
+    let up = first;
+    for (let a = start; a <= end; a = stop(a) + 1) {
+      if (a !== start) up = await part(a);
+      if (!up.ok) throw new Error(`googlevideo ${up.status}`);
+      for await (const chunk of up.body) {
+        if (!res.write(chunk)) await new Promise((r) => res.once('drain', r));
+      }
+    }
+    res.end();
+  } catch { res.destroy(); } // client gone or upstream error: close, the player retries
 }
 
 // ---------- profiles & libraries ----------
@@ -299,7 +335,7 @@ async function route(req, res) {
   if (a === 'playlist' && b) return json(res, 200, await playlist(b));
   if (a === 'radio' && b) return json(res, 200, await radio(b));
   if (a === 'stream' && b) return stream(b, req, res);
-  if (a === 'prepare' && b) { resolveUrl(b).catch(() => {}); return json(res, 202, { ok: true }); } // warm the URL cache for upcoming tracks
+  if (a === 'prepare' && b) { fastUrl(b); resolveUrl(b).catch(() => {}); return json(res, 202, { ok: true }); } // warm the URL cache for upcoming tracks
 
   if (a === 'users') {
     const us = await loadUsers();
