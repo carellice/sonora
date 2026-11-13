@@ -230,9 +230,10 @@ export const player = {
     if (s.pos + 1 < s.order.length) load(s.pos + 1)
     else if (s.repeat === 'all' && s.order.length) load(0)
   },
-  previous() {
+  /** track = true (swipe): always the previous track, without restarting the song first. */
+  previous(track) {
     const s = playerStore.get()
-    if (audio.currentTime > 3 || s.pos === 0) audio.currentTime = 0
+    if ((track !== true && audio.currentTime > 3) || s.pos === 0) audio.currentTime = 0
     else load(s.pos - 1)
   },
   seek: (sec) => { audio.currentTime = sec },

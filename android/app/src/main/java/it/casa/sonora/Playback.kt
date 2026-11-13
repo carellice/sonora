@@ -236,6 +236,8 @@ object Playback {
 
     fun next() = controller?.seekToNext()
     fun previous() = controller?.seekToPrevious()
+    /** Always the previous track (swipe), unlike [previous] which restarts the song after 3s. */
+    fun previousTrack() = controller?.let { if (it.hasPreviousMediaItem()) it.seekToPreviousMediaItem() else it.seekTo(0) }
     fun seek(ms: Long) = controller?.seekTo(ms)
     fun toggleShuffle() = controller?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled }
     fun cycleRepeat() = controller?.let {

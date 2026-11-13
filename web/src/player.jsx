@@ -3,6 +3,13 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Artwork, HeartButton, Icon, IconButton, Sheet, TrackRow, useArtColor, useLibrary } from './components.jsx'
 import { audioEl, closePlayer, fmt, lib, openPlayer, player, playerStore, uiStore, useStore } from './core.js'
 
+/** Horizontal swipe on a drag/pan end: left = next track, right = previous track. */
+const swipeTracks = (i) => {
+  if (Math.abs(i.offset.x) < 60 || Math.abs(i.offset.x) < Math.abs(i.offset.y)) return false
+  if (i.offset.x < 0) player.next(); else player.previous(true)
+  return true
+}
+
 /** Current time and duration of the audio element, polled while visible. */
 export function usePosition() {
   const [p, set] = useState({ pos: 0, dur: 0 })
@@ -70,7 +77,8 @@ export function MiniPlayer() {
       {current && (
         <motion.div className="mini" style={{ '--tint': tint }} initial={{ y: 90, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 90, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 420, damping: 30 }} whileTap={{ scale: 0.98 }} onClick={openPlayer}
-          drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={0.2} onDragEnd={(_, i) => i.offset.y < -30 && openPlayer()}>
+          drag dragDirectionLock dragConstraints={{ top: 0, bottom: 0, left: 0, right: 0 }} dragElastic={0.2}
+          onDragEnd={(_, i) => swipeTracks(i) || (i.offset.y < -30 && openPlayer())}>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div key={current.id} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }}>
               <Artwork url={current.thumb} size={44} />
@@ -143,14 +151,14 @@ export function FullPlayer() {
               <IconButton name="more_vert" label="Opzioni" onClick={() => uiStore.set({ menu: { track: current } })} />
             </div>
             <div className="full-body">
-              <div className="full-art-wrap">
+              <motion.div className="full-art-wrap" style={{ touchAction: 'none' }} onPanEnd={(_, i) => swipeTracks(i)}>
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div key={current.id} className="full-art" initial={{ x: 80, opacity: 0 }} animate={{ x: 0, opacity: 1, scale: playing ? 1 : 0.86 }}
                     exit={{ x: -80, opacity: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 22 }}>
                     <Artwork url={current.thumb} radius={22} className="square" />
                   </motion.div>
                 </AnimatePresence>
-              </div>
+              </motion.div>
               <div className="full-panel">
                 <div className="full-title-row">
                   <div style={{ minWidth: 0, flex: 1 }}>

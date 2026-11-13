@@ -14,6 +14,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -80,6 +81,23 @@ import androidx.media3.common.Player
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/** Horizontal swipe: left = next track, right = previous track. The content follows the finger and springs back. */
+@Composable
+fun Modifier.swipeTracks(): Modifier {
+    val scope = rememberCoroutineScope()
+    val dx = remember { Animatable(0f) }
+    return graphicsLayer { translationX = dx.value; alpha = 1f - (kotlin.math.abs(dx.value) / 1200f).coerceIn(0f, .5f) }
+        .pointerInput(Unit) {
+            detectHorizontalDragGestures(
+                onDragEnd = {
+                    if (dx.value < -160f) Playback.next() else if (dx.value > 160f) Playback.previousTrack()
+                    scope.launch { dx.animateTo(0f, spring()) }
+                },
+                onDragCancel = { scope.launch { dx.animateTo(0f, spring()) } },
+            ) { _, d -> scope.launch { dx.snapTo(dx.value + d) } }
+        }
+}
+
 /** Current position, polled while visible. */
 @Composable
 fun rememberPosition(): Pair<Long, Long> {
@@ -107,7 +125,7 @@ fun MiniPlayer(onOpen: () -> Unit) {
             .clickable(interactionSource = src, indication = ripple(), onClick = onOpen)
             .pointerInput(Unit) { detectVerticalDragGestures { _, dy -> if (dy < -12) onOpen() } },
     ) {
-        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.swipeTracks().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             AnimatedContent(t, label = "miniart", transitionSpec = { fadeIn(tween(300)) + scaleIn(initialScale = .8f) togetherWith fadeOut(tween(200)) }) {
                 Artwork(it.thumb, Modifier.size(44.dp), RoundedCornerShape(10.dp))
             }
@@ -185,7 +203,7 @@ fun FullPlayer(onClose: () -> Unit) {
             }
             Spacer(Modifier.weight(1f))
             AnimatedContent(
-                t, label = "art", modifier = Modifier.fillMaxWidth(),
+                t, label = "art", modifier = Modifier.fillMaxWidth().swipeTracks(),
                 transitionSpec = {
                     (slideInHorizontally(tween(380)) { it / 3 } + fadeIn(tween(380))) togetherWith
                         (slideOutHorizontally(tween(300)) { -it / 3 } + fadeOut(tween(250)))
