@@ -153,8 +153,9 @@ export function FullPlayer() {
             <div className="full-body">
               <motion.div className="full-art-wrap" style={{ touchAction: 'none' }} onPanEnd={(_, i) => swipeTracks(i)}>
                 <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div key={current.id} className="full-art" initial={{ x: 80, opacity: 0 }} animate={{ x: 0, opacity: 1, scale: playing ? 1 : 0.86 }}
+                  <motion.div key={current.id} className={`full-art ${playing ? 'playing' : ''}`} initial={{ x: 80, opacity: 0 }} animate={{ x: 0, opacity: 1, scale: playing ? 1 : 0.86 }}
                     exit={{ x: -80, opacity: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 22 }}>
+                    <div className="vinyl skeu-only" />
                     <Artwork url={current.thumb} radius={22} className="square" />
                   </motion.div>
                 </AnimatePresence>

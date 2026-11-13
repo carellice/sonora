@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Artwork, Dialog, Icon, Mosaic, NameDialog, Sheet, useLibrary } from './components.jsx'
+import { Artwork, Dialog, Icon, Mosaic, NameDialog, SegmentedTabs, Sheet, useLibrary } from './components.jsx'
 import { FullPlayer, MiniPlayer, PlayerBar, QueueSheet } from './player.jsx'
 import {
   AlbumScreen, ArtistScreen, LibraryScreen, LocalPlaylistScreen, PlaylistScreen, ProfileScreen, SearchScreen, profileGradient,
@@ -190,10 +190,19 @@ function AddToPlaylist() {
 
 function Settings({ open, onClose }) {
   const [info, setInfo] = useState(null)
+  const [skeu, setSkeu] = useState(() => document.documentElement.classList.contains('skeu'))
   useEffect(() => { if (open) api.info().then(setInfo).catch(() => {}) }, [open])
+  const pickSkin = (i) => {
+    setSkeu(i === 1)
+    localStorage.setItem('sonora.skin', i === 1 ? 'skeu' : 'classic')
+    document.documentElement.classList.toggle('skeu', i === 1)
+  }
   return (
     <Dialog open={open} onClose={onClose} title="Impostazioni" actions={<button className="text-btn dim" onClick={onClose}>Chiudi</button>}>
       <div className="settings">
+        <b>Stile grafica</b>
+        <SegmentedTabs id="skin" tabs={['Moderno', 'Skeuomorfismo']} selected={skeu ? 1 : 0} onSelect={pickSkin} />
+        <div style={{ height: 8 }} />
         <a className={`apk ${info?.apk ? '' : 'disabled'}`} href={info?.apk ? '/sonora.apk' : undefined} download>
           <Icon name="android" size={32} />
           <span>

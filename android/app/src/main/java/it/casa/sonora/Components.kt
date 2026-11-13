@@ -72,14 +72,37 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import android.graphics.drawable.BitmapDrawable
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 
-val Bg = Color(0xFF0B0B10)
-val Card = Color(0xFF17161F)
-val CardHi = Color(0xFF221F2E)
-val Accent = Color(0xFFFF4D6D)
-val Accent2 = Color(0xFF8B5CF6)
-val Dim = Color(0xFF9C99B0)
-val AccentBrush = Brush.linearGradient(listOf(Accent, Accent2))
+/** List row container: rounded highlight by default, full-width engraved groove in skeuomorphism. */
+fun Modifier.listRow(): Modifier =
+    if (Skin.skeu) padding(horizontal = 12.dp).drawBehind {
+        val y = size.height - 1f
+        drawLine(Color.Black.copy(alpha = .55f), Offset(0f, y - 1f), Offset(size.width, y - 1f), 2f)
+        drawLine(Color.White.copy(alpha = .05f), Offset(0f, y + 1f), Offset(size.width, y + 1f), 1f)
+    }
+    else padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp))
+
+/** Round icon-button background: a domed knob in skeuomorphism, a faint disc otherwise. */
+fun Modifier.roundButton(): Modifier = if (Skin.skeu) knob() else clip(CircleShape).background(Color.White.copy(alpha = .08f))
+
+/** Light text with a letterpress shadow on leather (skeuomorphism only). */
+fun skeuText(): TextStyle = if (Skin.skeu) Engraved else TextStyle.Default
+
+// getters: they follow the style chosen in Impostazioni (Skin.skeu is Compose state, so screens recompose)
+val Bg: Color get() = if (Skin.skeu) Color(0xFF1D1A17) else Color(0xFF0B0B10)
+val Card: Color get() = if (Skin.skeu) Color(0xFF2C2824) else Color(0xFF17161F)
+val CardHi: Color get() = if (Skin.skeu) Color(0xFF36312C) else Color(0xFF221F2E)
+val Accent: Color get() = if (Skin.skeu) Amber else Color(0xFFFF4D6D)
+val Accent2: Color get() = if (Skin.skeu) Color(0xFFFF7A1A) else Color(0xFF8B5CF6)
+val Dim: Color get() = if (Skin.skeu) Color(0xFFA89F94) else Color(0xFF9C99B0)
+val AccentBrush: Brush get() = if (Skin.skeu) AmberGloss else Brush.linearGradient(listOf(Accent, Accent2))
+private val Paper = Color(0xFFF4ECE2)
+private val Cocoa = Color(0xFF4A2A00)
 
 @Composable
 fun SonoraTheme(content: @Composable () -> Unit) = MaterialTheme(
@@ -97,7 +120,10 @@ fun fmtMs(ms: Long): String = "%d:%02d".format(ms / 60000, (ms / 1000) % 60)
 
 @Composable
 fun Artwork(url: String?, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(10.dp), icon: ImageVector = Icons.Rounded.MusicNote) {
-    Box(modifier.clip(shape).background(Brush.linearGradient(listOf(CardHi, Card))), contentAlignment = Alignment.Center) {
+    Box(
+        modifier.clip(shape).background(Brush.linearGradient(listOf(CardHi, Card))).then(if (Skin.skeu) Modifier.glossOverlay() else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
         Icon(icon, null, tint = Dim.copy(alpha = .6f), modifier = Modifier.fillMaxSize(.38f))
         if (url != null) AsyncImage(
             model = ImageRequest.Builder(LocalContext.current).data(url).crossfade(350).build(),
@@ -154,9 +180,9 @@ fun TrackRow(
 ) {
     val isCurrent = Playback.current?.id == t.id
     val src = remember { MutableInteractionSource() }
-    val bg by animateColorAsState(if (isCurrent) Accent.copy(alpha = .10f) else Color.Transparent, label = "rowbg")
+    val bg by animateColorAsState(if (isCurrent) Accent.copy(alpha = if (Skin.skeu) .14f else .10f) else Color.Transparent, label = "rowbg")
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(bg)
+        Modifier.fillMaxWidth().listRow().background(bg)
             .combinedClickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick, onLongClick = onMore)
             .pressScale(src).padding(horizontal = 8.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -164,7 +190,10 @@ fun TrackRow(
         if (index != null) {
             Box(Modifier.width(32.dp), contentAlignment = Alignment.Center) {
                 if (isCurrent) EqualizerBars(Playback.isPlaying)
-                else Text("$index", color = Dim, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                else Text(
+                    "$index", color = Dim, fontSize = 15.sp, fontWeight = if (Skin.skeu) FontWeight.Bold else FontWeight.Medium,
+                    fontFamily = if (Skin.skeu) FontFamily.Monospace else null,
+                )
             }
         } else Box(contentAlignment = Alignment.Center) {
             Artwork(t.thumb, Modifier.size(50.dp))
@@ -176,7 +205,8 @@ fun TrackRow(
         Column(Modifier.weight(1f)) {
             Text(
                 t.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
-                color = if (isCurrent) Accent else Color.White,
+                color = if (isCurrent) Accent else if (Skin.skeu) Paper else Color.White,
+                style = if (!Skin.skeu) TextStyle.Default else if (isCurrent) glow() else Engraved,
             )
             Text(
                 listOf(subtitle, fmt(t.duration)).filter { it.isNotEmpty() }.joinToString(" • "),
@@ -208,9 +238,10 @@ fun AlbumCard(title: String, subtitle: String, thumb: String?, modifier: Modifie
             .pressScale(src).clip(RoundedCornerShape(14.dp))
             .clickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick).padding(6.dp),
     ) {
-        Artwork(thumb, Modifier.fillMaxWidth().aspectRatio(1f), RoundedCornerShape(12.dp))
+        if (Skin.skeu) Artwork(thumb, Modifier.fillMaxWidth().aspectRatio(1f).shadow(8.dp, RoundedCornerShape(4.dp)), RoundedCornerShape(4.dp))
+        else Artwork(thumb, Modifier.fillMaxWidth().aspectRatio(1f), RoundedCornerShape(12.dp))
         Spacer(Modifier.height(8.dp))
-        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, style = skeuText())
         Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Dim, fontSize = 12.sp)
     }
 }
@@ -219,18 +250,21 @@ fun AlbumCard(title: String, subtitle: String, thumb: String?, modifier: Modifie
 fun ArtistRow(a: Artist, onClick: () -> Unit) {
     val src = remember { MutableInteractionSource() }
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp))
+        Modifier.fillMaxWidth().listRow()
             .clickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .pressScale(src).padding(horizontal = 8.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (a.thumb != null) Artwork(a.thumb, Modifier.size(56.dp), CircleShape)
         else Box(Modifier.size(56.dp).clip(CircleShape).background(AccentBrush), contentAlignment = Alignment.Center) {
-            Text(a.name.take(1).uppercase(), fontWeight = FontWeight.Bold, fontSize = 22.sp)
+            Text(
+                a.name.take(1).uppercase(), fontWeight = FontWeight.Bold, fontSize = 22.sp,
+                color = if (Skin.skeu) Cocoa else Color.White, style = if (Skin.skeu) OnMetal else TextStyle.Default,
+            )
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(a.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(a.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText())
             Text("Artista", color = Dim, fontSize = 13.sp)
         }
     }
@@ -240,8 +274,10 @@ fun ArtistRow(a: Artist, onClick: () -> Unit) {
 fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, big: Boolean = false) {
     val focusBg by animateColorAsState(if (value.isEmpty()) Card else CardHi, label = "sf")
     Row(
-        modifier.fillMaxWidth().height(if (big) 52.dp else 44.dp).clip(RoundedCornerShape(if (big) 26.dp else 22.dp)).background(focusBg)
-            .padding(horizontal = 14.dp),
+        modifier.fillMaxWidth().height(if (big) 52.dp else 44.dp).then(
+            if (Skin.skeu) Modifier.inset(RoundedCornerShape(if (big) 26.dp else 22.dp))
+            else Modifier.clip(RoundedCornerShape(if (big) 26.dp else 22.dp)).background(focusBg),
+        ).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Rounded.Search, null, tint = Dim, modifier = Modifier.size(20.dp))
@@ -265,14 +301,17 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
 fun GradientButton(text: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val src = remember { MutableInteractionSource() }
     Row(
-        modifier.pressScale(src).height(48.dp).clip(RoundedCornerShape(24.dp)).background(AccentBrush)
+        modifier.pressScale(src).height(48.dp).then(
+            if (Skin.skeu) Modifier.glossAmber(RoundedCornerShape(12.dp)) else Modifier.clip(RoundedCornerShape(24.dp)).background(AccentBrush),
+        )
             .clickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .padding(horizontal = 22.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
     ) {
-        Icon(icon, null, tint = Color.White)
+        val fg = if (Skin.skeu) Cocoa else Color.White
+        Icon(icon, null, tint = fg)
         Spacer(Modifier.width(8.dp))
-        Text(text, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(text, fontWeight = FontWeight.Bold, color = fg, style = if (Skin.skeu) OnMetal else TextStyle.Default)
     }
 }
 
@@ -280,31 +319,39 @@ fun GradientButton(text: String, icon: ImageVector, modifier: Modifier = Modifie
 fun SoftButton(text: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val src = remember { MutableInteractionSource() }
     Row(
-        modifier.pressScale(src).height(48.dp).clip(RoundedCornerShape(24.dp)).background(CardHi)
+        modifier.pressScale(src).height(48.dp).then(
+            if (Skin.skeu) Modifier.metal(RoundedCornerShape(12.dp)) else Modifier.clip(RoundedCornerShape(24.dp)).background(CardHi),
+        )
             .clickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .padding(horizontal = 22.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
     ) {
-        Icon(icon, null, tint = Color.White)
+        val fg = if (Skin.skeu) MetalText else Color.White
+        Icon(icon, null, tint = fg)
         Spacer(Modifier.width(8.dp))
-        Text(text, fontWeight = FontWeight.SemiBold, color = Color.White)
+        Text(text, fontWeight = FontWeight.SemiBold, color = fg, style = if (Skin.skeu) OnMetal else TextStyle.Default)
     }
 }
 
 @Composable
 fun EmptyState(icon: ImageVector, title: String, text: String) {
     Column(Modifier.fillMaxWidth().padding(top = 70.dp, start = 32.dp, end = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(84.dp).clip(CircleShape).background(Card), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(84.dp).then(if (Skin.skeu) Modifier.knob() else Modifier.clip(CircleShape).background(Card)), contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = Accent, modifier = Modifier.size(38.dp))
         }
         Spacer(Modifier.height(18.dp))
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, style = skeuText())
         Spacer(Modifier.height(6.dp))
         Text(text, color = Dim, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
 @Composable
-fun Marquee(text: String, modifier: Modifier = Modifier, size: Int = 15, weight: FontWeight = FontWeight.Normal, color: Color = Color.White) =
-    Text(text, modifier.basicMarquee(iterations = Int.MAX_VALUE), maxLines = 1, fontSize = size.sp, fontWeight = weight, color = color)
+fun Marquee(
+    text: String, modifier: Modifier = Modifier, size: Int = 15, weight: FontWeight = FontWeight.Normal, color: Color = Color.White,
+    style: TextStyle = TextStyle.Default, mono: Boolean = false,
+) = Text(
+    text, modifier.basicMarquee(iterations = Int.MAX_VALUE), maxLines = 1, fontSize = size.sp, fontWeight = weight, color = color,
+    style = style, fontFamily = if (mono) FontFamily.Monospace else null,
+)
 

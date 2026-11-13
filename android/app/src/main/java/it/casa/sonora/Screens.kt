@@ -91,6 +91,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -174,17 +177,29 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
 
 @Composable
 fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    BoxWithConstraints(modifier.fillMaxWidth().height(42.dp).clip(RoundedCornerShape(21.dp)).background(Card).padding(4.dp)) {
+    // skeuomorphism: a brushed-metal rocker whose active key is pressed in and lit amber
+    val skeu = Skin.skeu
+    val r = if (skeu) 8.dp else 17.dp
+    BoxWithConstraints(
+        modifier.fillMaxWidth().height(42.dp)
+            .then(if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 3.dp) else Modifier.clip(RoundedCornerShape(21.dp)).background(Card))
+            .padding(4.dp),
+    ) {
         val w = maxWidth / tabs.size
         val x by animateDpAsState(w * selected, spring(dampingRatio = .75f, stiffness = 500f), label = "tab")
-        Box(Modifier.offset(x = x).width(w).height(34.dp).clip(RoundedCornerShape(17.dp)).background(AccentBrush))
+        Box(Modifier.offset(x = x).width(w).height(34.dp).then(if (skeu) Modifier.inset(RoundedCornerShape(r)) else Modifier.clip(RoundedCornerShape(r)).background(AccentBrush)))
         Row(Modifier.fillMaxSize()) {
             tabs.forEachIndexed { i, t ->
-                val c by animateColorAsState(if (i == selected) Color.White else Dim, label = "tabc")
+                val c by animateColorAsState(if (i == selected) (if (skeu) Amber else Color.White) else if (skeu) MetalText else Dim, label = "tabc")
                 Box(
-                    Modifier.weight(1f).height(34.dp).clip(RoundedCornerShape(17.dp)).clickable { onSelect(i) },
+                    Modifier.weight(1f).height(34.dp).clip(RoundedCornerShape(r)).clickable { onSelect(i) },
                     contentAlignment = Alignment.Center,
-                ) { Text(t, color = c, fontWeight = FontWeight.SemiBold, fontSize = if (tabs.size > 4) 12.sp else 13.sp, maxLines = 1) }
+                ) {
+                    Text(
+                        t, color = c, fontWeight = FontWeight.SemiBold, fontSize = if (tabs.size > 4) 12.sp else 13.sp, maxLines = 1,
+                        style = if (!skeu) androidx.compose.ui.text.TextStyle.Default else if (i == selected) glow() else OnMetal,
+                    )
+                }
             }
         }
     }
@@ -209,7 +224,7 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
     ) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Libreria", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+                Text("Libreria", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), style = skeuText())
                 IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, "Impostazioni", tint = Dim) }
             }
             SegmentedTabs(tabs, tab, { tab = it; filter = "" }, Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
@@ -282,27 +297,30 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                         LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                             item {
                                 Row(
-                                    Modifier.fillMaxWidth().padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp))
+                                    Modifier.fillMaxWidth().listRow()
                                         .clickable { newPlaylist = true }.padding(8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Box(Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)).background(AccentBrush), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(30.dp))
+                                    Box(
+                                        Modifier.size(56.dp).then(if (Skin.skeu) Modifier.glossAmber(RoundedCornerShape(8.dp)) else Modifier.clip(RoundedCornerShape(12.dp)).background(AccentBrush)),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(Icons.Rounded.Add, null, tint = if (Skin.skeu) Color(0xFF4A2A00) else Color.White, modifier = Modifier.size(30.dp))
                                     }
                                     Spacer(Modifier.width(14.dp))
-                                    Text("Nuova playlist", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                    Text("Nuova playlist", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, style = skeuText())
                                 }
                             }
                             items(pls, key = { it.id }) { p ->
                                 Row(
-                                    Modifier.fillMaxWidth().padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp))
+                                    Modifier.fillMaxWidth().listRow()
                                         .clickable { nav.navigate("local/${p.id}") }.padding(8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Mosaic(p.tracks.mapNotNull { it.thumb }, Modifier.size(56.dp))
                                     Spacer(Modifier.width(14.dp))
                                     Column {
-                                        Text(p.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(p.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText())
                                         Text(if (p.tracks.size == 1) "1 brano" else "${p.tracks.size} brani", color = Dim, fontSize = 13.sp)
                                     }
                                 }
@@ -425,7 +443,7 @@ fun SearchScreen(nav: NavController) {
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Text("Cerca", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp))
+        Text("Cerca", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp))
         SearchField(q, { q = it }, "Artisti, brani, album…", Modifier.padding(horizontal = 16.dp), big = true)
         SegmentedTabs(types, type, { type = it }, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
         Box(Modifier.fillMaxWidth().height(3.dp)) {
@@ -467,7 +485,7 @@ fun SearchScreen(nav: NavController) {
 fun BackButton(nav: NavController, modifier: Modifier = Modifier) {
     IconButton(
         onClick = { nav.popBackStack() },
-        modifier = modifier.statusBarsPadding().padding(8.dp).size(40.dp).clip(CircleShape).background(Color.Black.copy(alpha = .35f)),
+        modifier = modifier.statusBarsPadding().padding(8.dp).size(40.dp).then(if (Skin.skeu) Modifier.knob() else Modifier.clip(CircleShape).background(Color.Black.copy(alpha = .35f))),
     ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Indietro", tint = Color.White) }
 }
 
@@ -498,7 +516,7 @@ fun <T> Loader(key: Any, load: suspend () -> T, content: @Composable (T) -> Unit
 fun CollectionScreen(
     nav: NavController, title: String, subtitle: String, thumb: String?, tracks: List<Track>,
     numbered: Boolean, onSubtitle: (() -> Unit)? = null,
-    art: @Composable (Modifier) -> Unit = { Artwork(thumb, it, RoundedCornerShape(18.dp)) },
+    art: @Composable (Modifier) -> Unit = { Artwork(thumb, it, RoundedCornerShape(if (Skin.skeu) 4.dp else 18.dp)) },
     actions: @Composable () -> Unit = {}, localPlaylistId: String? = null,
 ) {
     val tint = rememberArtColor(thumb, Accent2.copy(alpha = .5f))
@@ -508,7 +526,9 @@ fun CollectionScreen(
         LazyColumn(state = list, contentPadding = PaddingValues(bottom = 24.dp), modifier = Modifier.fillMaxSize()) {
             item {
                 Column(
-                    Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(tint, Bg))).statusBarsPadding().padding(top = 48.dp),
+                    Modifier.fillMaxWidth()
+                        .background(Brush.verticalGradient(if (Skin.skeu) listOf(tint.copy(alpha = .45f), Color.Transparent) else listOf(tint, Bg)))
+                        .statusBarsPadding().padding(top = 48.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     // Artwork shrinks and fades as the list scrolls (parallax).
@@ -516,10 +536,10 @@ fun CollectionScreen(
                     val p = (with(density) { off.toDp().value } / 260f).coerceIn(0f, 1f)
                     art(
                         Modifier.size(240.dp).graphicsLayer { scaleX = 1f - p * .25f; scaleY = 1f - p * .25f; alpha = 1f - p; translationY = off * .5f }
-                            .shadow(28.dp, RoundedCornerShape(18.dp)),
+                            .shadow(28.dp, RoundedCornerShape(if (Skin.skeu) 4.dp else 18.dp)),
                     )
                     Spacer(Modifier.height(20.dp))
-                    Text(title, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp))
+                    Text(title, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, style = skeuText(), modifier = Modifier.padding(horizontal = 24.dp))
                     Spacer(Modifier.height(4.dp))
                     Text(
                         subtitle, color = if (onSubtitle != null) Color.White.copy(alpha = .85f) else Dim, fontSize = 15.sp,
@@ -558,7 +578,7 @@ fun DownloadAllButton(tracks: List<Track>) {
     val busy = tracks.any { Downloads.isActive(it.id) }
     IconButton(
         onClick = { if (busy) Downloads.cancel(tracks) else if (all) Downloads.remove(tracks) else Downloads.download(tracks) },
-        modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f)),
+        modifier = Modifier.size(48.dp).roundButton(),
     ) {
         when {
             busy -> Box(contentAlignment = Alignment.Center) {
@@ -574,7 +594,7 @@ fun DownloadAllButton(tracks: List<Track>) {
 @Composable
 fun HeartButton(saved: Boolean, onClick: () -> Unit) {
     val scale by androidx.compose.animation.core.animateFloatAsState(if (saved) 1.15f else 1f, spring(dampingRatio = .35f, stiffness = 400f), label = "heart")
-    IconButton(onClick = onClick, modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f))) {
+    IconButton(onClick = onClick, modifier = Modifier.size(48.dp).roundButton()) {
         Icon(
             if (saved) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (saved) "Rimuovi dalla libreria" else "Salva in libreria",
             tint = if (saved) Accent else Color.White, modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
@@ -610,7 +630,7 @@ fun PlaylistScreen(id: String, nav: NavController) {
                                 .onSuccess { Toast.makeText(ctx, "Playlist salvata in libreria", Toast.LENGTH_SHORT).show() }
                         }
                     },
-                    modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f)),
+                    modifier = Modifier.size(48.dp).roundButton(),
                 ) { Icon(Icons.Rounded.LibraryAdd, "Salva in libreria", tint = Color.White) }
             },
         )
@@ -627,7 +647,7 @@ fun LocalPlaylistScreen(id: String, nav: NavController) {
         nav, p.name, "La tua playlist", p.tracks.firstOrNull()?.thumb, p.tracks, numbered = false, localPlaylistId = p.id,
         art = { Mosaic(p.tracks.mapNotNull { it.thumb }, it) },
         actions = {
-            IconButton(onClick = { confirm = true }, modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f))) {
+            IconButton(onClick = { confirm = true }, modifier = Modifier.size(48.dp).roundButton()) {
                 Icon(Icons.Rounded.Delete, "Elimina playlist", tint = Color.White)
             }
         },
@@ -664,7 +684,7 @@ fun ArtistScreen(id: String, nav: NavController) {
                         )
                         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Bg.copy(alpha = .4f), Bg))))
                         Row(Modifier.align(Alignment.BottomStart).padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(a.name, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(a.name, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                             HeartButton(Lib.hasArtist(a.id)) { Lib.scope.launch { Lib.toggleArtist(a) } }
                         }
                     }
@@ -695,7 +715,7 @@ fun ArtistScreen(id: String, nav: NavController) {
 }
 
 @Composable
-fun SectionTitle(t: String) = Text(t, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp))
+fun SectionTitle(t: String) = Text(t, fontSize = 20.sp, fontWeight = FontWeight.Bold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp))
 
 // ---------------- Profiles ----------------
 
@@ -725,11 +745,11 @@ fun ProfileScreen(onPick: (String) -> Unit) {
     }
 
     Column(
-        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg))).statusBarsPadding(),
+        Modifier.fillMaxSize().then(if (Skin.skeu) Modifier else Modifier.background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg)))).statusBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(64.dp))
-        Text("Chi ascolta?", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold)
+        Text("Chi ascolta?", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText())
         Spacer(Modifier.height(6.dp))
         Text("Ogni profilo ha la sua libreria e le sue playlist", color = Dim, fontSize = 15.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(36.dp))
@@ -755,7 +775,12 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                 item(key = "add") {
                     PopIn(list.size) {
                         ProfileBubble("Aggiungi", Modifier.clickable { creating = true }) {
-                            Box(Modifier.fillMaxSize().background(Card), contentAlignment = Alignment.Center) {
+                            Box(
+                                Modifier.fillMaxSize().then(
+                                    if (Skin.skeu) Modifier.background(Brush.radialGradient(listOf(Color(0xFF4A433C), Color(0xFF221E1A)))) else Modifier.background(Card),
+                                ),
+                                contentAlignment = Alignment.Center,
+                            ) {
                                 Icon(Icons.Rounded.Add, null, tint = Dim, modifier = Modifier.size(44.dp))
                             }
                         }
@@ -799,8 +824,23 @@ private fun PopIn(index: Int, content: @Composable () -> Unit) {
 @Composable
 private fun ProfileBubble(name: String, click: Modifier, avatar: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(116.dp).shadow(18.dp, CircleShape).clip(CircleShape).then(click)) { avatar() }
+        if (Skin.skeu) {
+            // glass dome in a metal bezel
+            Box(
+                Modifier.size(122.dp).shadow(18.dp, CircleShape).clip(CircleShape)
+                    .background(Brush.verticalGradient(listOf(Color(0xFF6A635C), Color(0xFF15120F)))).padding(4.dp)
+                    .clip(CircleShape).then(click)
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .35f)), startY = size.height * .5f))
+                        drawOval(
+                            Brush.verticalGradient(listOf(Color.White.copy(alpha = .55f), Color.Transparent), startY = 6f, endY = size.height * .5f),
+                            topLeft = Offset(size.width * .14f, 6f), size = Size(size.width * .72f, size.height * .44f),
+                        )
+                    },
+            ) { avatar() }
+        } else Box(Modifier.size(116.dp).shadow(18.dp, CircleShape).clip(CircleShape).then(click)) { avatar() }
         Spacer(Modifier.height(12.dp))
-        Text(name, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(name, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText())
     }
 }

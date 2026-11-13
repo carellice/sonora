@@ -81,6 +81,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -109,6 +110,7 @@ class MainActivity : ComponentActivity() {
         val prefs = getSharedPreferences("sonora", MODE_PRIVATE)
         Api.base = prefs.getString("server", "") ?: ""
         Api.user = prefs.getString("user", "") ?: ""
+        Skin.init(prefs)
         if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         Downloads.init(this)
         Playback.attach(this)
@@ -131,7 +133,7 @@ fun Root(prefs: SharedPreferences) {
         Lib.clear()
         user = id
     }
-    Box(Modifier.fillMaxSize().background(Bg)) {
+    Box(Modifier.fillMaxSize().background(Bg).then(if (Skin.skeu) Modifier.leather() else Modifier)) {
         when {
             server.isBlank() -> SetupScreen(prefs.getString("server", "") ?: "") { url ->
                 prefs.edit { putString("server", url) }
@@ -178,7 +180,7 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = Bg,
+            containerColor = if (Skin.skeu) Color.Transparent else Bg,
             bottomBar = {
                 Column {
                     AnimatedVisibility(
@@ -186,7 +188,11 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                         enter = slideInVertically(spring(dampingRatio = .7f)) { it } + fadeIn(),
                         exit = slideOutVertically { it } + fadeOut(),
                     ) { MiniPlayer { playerOpen = true } }
-                    NavigationBar(containerColor = Bg, tonalElevation = 0.dp) {
+                    val skeu = Skin.skeu
+                    NavigationBar(
+                        containerColor = if (skeu) Color.Transparent else Bg, tonalElevation = 0.dp,
+                        modifier = if (skeu) Modifier.metal(RectangleShape, 12.dp) else Modifier,
+                    ) {
                         listOf(Triple("library", "Libreria", Icons.Rounded.LibraryMusic), Triple("search", "Cerca", Icons.Rounded.Search))
                             .forEach { (r, label, icon) ->
                                 val isTop = route == r
@@ -199,8 +205,12 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                                             restoreState = true
                                         }
                                     },
-                                    icon = { Icon(icon, label) }, label = { Text(label, fontWeight = FontWeight.SemiBold) },
-                                    colors = NavigationBarItemDefaults.colors(
+                                    icon = { Icon(icon, label) },
+                                    label = { Text(label, fontWeight = FontWeight.SemiBold, style = if (skeu) OnMetal else androidx.compose.ui.text.TextStyle.Default) },
+                                    colors = if (skeu) NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFFE08400), selectedTextColor = Color(0xFFB86400), indicatorColor = Color.Black.copy(alpha = .18f),
+                                        unselectedIconColor = MetalDim, unselectedTextColor = MetalDim,
+                                    ) else NavigationBarItemDefaults.colors(
                                         selectedIconColor = Color.White, selectedTextColor = Color.White, indicatorColor = Accent.copy(alpha = .85f),
                                         unselectedIconColor = Dim, unselectedTextColor = Dim,
                                     ),
@@ -244,6 +254,10 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
         title = { Text("Impostazioni") },
         text = {
             Column {
+                Text("Stile grafica", fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                SegmentedTabs(listOf("Moderno", "Skeuomorfismo"), if (Skin.skeu) 1 else 0, { Skin.set(it == 1) })
+                Spacer(Modifier.height(16.dp))
                 Text("Server: ${Api.base}", color = Dim, fontSize = 13.sp)
                 Spacer(Modifier.height(16.dp))
                 Text("Download", fontWeight = FontWeight.SemiBold)
@@ -334,9 +348,9 @@ private fun MenuItem(icon: ImageVector, text: String, onClick: () -> Unit) {
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = Color.White)
+        Icon(icon, null, tint = if (Skin.skeu) Accent else Color.White)
         Spacer(Modifier.width(18.dp))
-        Text(text, fontSize = 15.sp)
+        Text(text, fontSize = 15.sp, style = skeuText())
     }
 }
 

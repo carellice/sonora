@@ -1,0 +1,225 @@
+/* Skeuomorphic skin ("Hi-Fi"): active when <html> has the class "skeu" (Impostazioni → Stile grafica).
+   Dark stitched leather, brushed aluminium, glossy buttons, amber LED and a vinyl record in the player. */
+.skeu-only { display: none; }
+html.skeu .skeu-only { display: revert; }
+
+html.skeu {
+  --bg: #1d1a17;
+  --card: #2c2824;
+  --card-hi: #36312c;
+  --accent: #ffb23e;
+  --accent2: #ff7a1a;
+  --dim: #a89f94;
+  --grad: linear-gradient(to bottom, #ffd27a, #ffa526 48%, #f08a0c 52%, #ffb03a);
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='300' height='120' filter='url(%23b)'/%3E%3C/svg%3E");
+  --leather: var(--noise), radial-gradient(ellipse at 50% 0%, #3a342e, #1d1a17 70%);
+  --metal: var(--brush), linear-gradient(to bottom, #f1f2f4, #c9cbcf 45%, #b3b6bb 55%, #d7d9dc);
+  --metal-text: #2a2c30;
+  --emboss: 0 1px 0 rgba(255,255,255,.07) inset, 0 -1px 0 rgba(0,0,0,.5) inset, 0 3px 8px rgba(0,0,0,.45);
+  --inset: inset 0 2px 5px rgba(0,0,0,.75), inset 0 0 0 1px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.08);
+  --stitch: 1.5px dashed rgba(240,220,190,.28);
+}
+html.skeu body {
+  background: var(--leather); background-color: var(--bg); background-attachment: fixed;
+  font-family: 'Helvetica Neue', Helvetica, Roboto, system-ui, sans-serif;
+}
+html.skeu h1, html.skeu h2, html.skeu .section, html.skeu .empty-title, html.skeu .dialog-title, html.skeu .sheet-title {
+  text-shadow: 0 -1px 0 rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.12);
+}
+html.skeu .head h1, html.skeu .profiles h1 { letter-spacing: -.5px; color: #f3e9dc; }
+
+/* ---------- basics ---------- */
+html.skeu .icon-btn.round, html.skeu .back-btn {
+  background: radial-gradient(circle at 50% 30%, #5a534c, #2a2622 70%) !important; backdrop-filter: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 -2px 3px rgba(0,0,0,.4) inset, 0 3px 6px rgba(0,0,0,.6), 0 0 0 1px #0f0d0b;
+}
+html.skeu .icon-btn:hover { background: rgba(255,255,255,.05); }
+html.skeu .icon-btn.active { color: var(--accent); filter: drop-shadow(0 0 5px rgba(255,178,62,.8)); }
+html.skeu .text-btn { color: var(--accent); text-shadow: 0 0 8px rgba(255,178,62,.35); }
+html.skeu .text-btn.dim { color: var(--dim); text-shadow: none; }
+
+/* artwork: printed sleeve with a glossy reflection */
+html.skeu .art { background: linear-gradient(135deg, #4a433c, #2a2622); box-shadow: 0 2px 5px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.6); }
+html.skeu .art::after, html.skeu .mosaic { position: relative; }
+html.skeu .art::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(155deg, rgba(255,255,255,.28), rgba(255,255,255,.06) 42%, transparent 43%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 1px rgba(255,255,255,.08);
+}
+html.skeu .mosaic { box-shadow: 0 2px 5px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.6); }
+html.skeu .avatar, html.skeu .new-pl { background: var(--grad); color: #4a2a00; text-shadow: 0 1px 0 rgba(255,255,255,.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 2px 5px rgba(0,0,0,.6); }
+html.skeu .new-pl svg { filter: drop-shadow(0 1px 0 rgba(255,255,255,.5)); color: #4a2a00; }
+
+html.skeu .spinner { border-color: rgba(255,255,255,.12); border-top-color: var(--accent); }
+
+/* ---------- rows: a stitched leather card holding an engraved list ---------- */
+html.skeu .track { margin: 0 12px; padding: 9px 10px; border-radius: 0; border-bottom: 1px solid rgba(0,0,0,.55); box-shadow: 0 1px 0 rgba(255,255,255,.05); }
+html.skeu .track:hover { background: rgba(255,255,255,.035); }
+html.skeu .track.current { background: linear-gradient(to bottom, rgba(255,178,62,.16), rgba(255,178,62,.06)); }
+html.skeu .track.current .track-title { color: var(--accent); text-shadow: 0 0 8px rgba(255,178,62,.45); }
+html.skeu .track-title { color: #f4ece2; text-shadow: 0 -1px 0 rgba(0,0,0,.8); }
+html.skeu .track-index { font-family: 'Courier New', monospace; font-weight: 700; color: #8c8378; }
+html.skeu .track-art .art { border-radius: 4px !important; }
+
+html.skeu .card { padding: 8px; }
+html.skeu .card .art { border-radius: 4px !important; box-shadow: 0 6px 12px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.7); }
+html.skeu .card:hover { background: rgba(255,255,255,.04); }
+html.skeu .card-title { color: #f4ece2; text-shadow: 0 -1px 0 rgba(0,0,0,.8); }
+
+/* ---------- controls ---------- */
+html.skeu .search { background: linear-gradient(to bottom, #15120f, #221e1a); box-shadow: var(--inset); }
+html.skeu .search.filled, html.skeu .search:focus-within { background: linear-gradient(to bottom, #120f0c, #1d1915); box-shadow: var(--inset), 0 0 0 2px rgba(255,178,62,.35); }
+
+/* segmented control: brushed aluminium rocker with the active key pressed in */
+html.skeu .seg { background: var(--metal); padding: 3px; border-radius: 10px; box-shadow: 0 0 0 1px #4a4c50, 0 2px 4px rgba(0,0,0,.6), inset 0 1px 0 #fff; }
+html.skeu .seg-item { border-radius: 7px; color: var(--metal-text); text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+html.skeu .seg-item + .seg-item { box-shadow: -1px 0 0 rgba(0,0,0,.18), -2px 0 0 rgba(255,255,255,.5); }
+html.skeu .seg-item.on { color: var(--accent); text-shadow: 0 0 6px rgba(255,178,62,.8), 0 -1px 0 #000; }
+html.skeu .seg-pill { border-radius: 7px; background: linear-gradient(to bottom, #1d1a17, #34302b); box-shadow: inset 0 2px 4px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.6); }
+
+/* buttons: glossy amber candy + brushed metal */
+html.skeu .btn { border-radius: 12px; position: relative; overflow: hidden; }
+html.skeu .btn.grad { color: #4a2a00; text-shadow: 0 1px 0 rgba(255,255,255,.55);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), inset 0 -2px 4px rgba(150,60,0,.4), 0 0 0 1px #7a3e00, 0 4px 10px rgba(0,0,0,.55), 0 0 18px rgba(255,160,40,.25); }
+html.skeu .btn.soft { background: var(--metal); color: var(--metal-text); text-shadow: 0 1px 0 rgba(255,255,255,.75);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px #55575b, 0 4px 10px rgba(0,0,0,.55); }
+html.skeu .btn:active { filter: brightness(.9); box-shadow: inset 0 3px 6px rgba(0,0,0,.45), 0 0 0 1px #3a3a3a; }
+
+html.skeu .empty-icon { background: radial-gradient(circle at 50% 30%, #4a433c, #221e1a 70%); color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 0 0 6px rgba(0,0,0,.25), 0 6px 14px rgba(0,0,0,.6); }
+html.skeu .empty-icon svg { filter: drop-shadow(0 0 8px rgba(255,178,62,.7)); }
+html.skeu .progress-bar { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* ---------- screens ---------- */
+html.skeu .collection-head { background: none; position: relative; }
+html.skeu .collection-head::before { content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--tint) 45%, transparent), transparent); }
+html.skeu .collection-art { filter: drop-shadow(0 22px 26px rgba(0,0,0,.8)); }
+html.skeu .collection-art .art, html.skeu .collection-art .mosaic { border-radius: 4px !important; }
+html.skeu .artist-fade { background: linear-gradient(to bottom, transparent, rgba(29,26,23,.45), var(--bg)); }
+html.skeu .artist-name h1 { text-shadow: 0 2px 12px rgba(0,0,0,.8), 0 -1px 0 #000; }
+
+/* ---------- profiles ---------- */
+html.skeu .profiles { background: none; }
+html.skeu .profile-avatar { position: relative; color: #fff; text-shadow: 0 -1px 0 rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.4);
+  box-shadow: 0 0 0 4px #15120f, 0 0 0 6px #5a534c, 0 12px 24px rgba(0,0,0,.7), inset 0 -10px 20px rgba(0,0,0,.35); }
+html.skeu .profile-avatar::after { content: ''; position: absolute; inset: 6px 14px 50% 14px; border-radius: 50% 50% 45% 45%;
+  background: linear-gradient(to bottom, rgba(255,255,255,.55), rgba(255,255,255,0)); pointer-events: none; }
+html.skeu .profile-avatar.add { background: radial-gradient(circle at 50% 30%, #4a433c, #221e1a 70%); }
+html.skeu .profile-name { text-shadow: 0 -1px 0 #000; }
+
+/* ---------- overlays: stitched leather ---------- */
+html.skeu .dialog, html.skeu .sheet { position: relative; background: var(--noise), linear-gradient(to bottom, #3b352f, #26221e); background-color: #2c2824;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 0 1px #0c0a08, 0 20px 50px rgba(0,0,0,.8); }
+html.skeu .dialog::before, html.skeu .sheet::before { content: ''; position: absolute; inset: 7px; border: var(--stitch); border-radius: 22px; pointer-events: none; }
+html.skeu .sheet::before { border-bottom: 0; border-radius: 22px 22px 0 0; bottom: 0; }
+html.skeu .dialog-body { color: var(--dim); }
+html.skeu .sheet-handle { height: 6px; width: 40px; border-radius: 3px; background: #15120f; box-shadow: inset 0 1px 2px #000, 0 1px 0 rgba(255,255,255,.12); }
+html.skeu .field { border: 0; background: linear-gradient(to bottom, #15120f, #221e1a); box-shadow: var(--inset), 0 0 0 2px rgba(255,178,62,.35); border-radius: 10px; }
+html.skeu .menu-item { border-bottom: 1px solid rgba(0,0,0,.45); box-shadow: 0 1px 0 rgba(255,255,255,.04); }
+html.skeu .menu-item svg { color: var(--accent); filter: drop-shadow(0 0 4px rgba(255,178,62,.5)); }
+html.skeu .toast { background: var(--metal); color: var(--metal-text); text-shadow: 0 1px 0 #fff; font-weight: 600;
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px #55575b, 0 8px 24px rgba(0,0,0,.7); }
+html.skeu .apk { background: var(--grad); color: #4a2a00; text-shadow: 0 1px 0 rgba(255,255,255,.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 0 0 1px #7a3e00, 0 4px 10px rgba(0,0,0,.5); }
+html.skeu .apk.disabled { background: var(--metal); color: #6a6c70; }
+
+/* ---------- player ---------- */
+/* mini player: an amber LCD display on a metal faceplate */
+html.skeu .mini { background: var(--metal) !important; border-radius: 14px; padding: 7px; color: var(--metal-text);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px #4a4c50, 0 8px 20px rgba(0,0,0,.7); }
+html.skeu .mini-text { align-self: stretch; display: flex; flex-direction: column; justify-content: center; padding: 0 10px; border-radius: 6px;
+  background: linear-gradient(to bottom, #1b1408, #2b2010); box-shadow: inset 0 2px 5px #000, 0 1px 0 rgba(255,255,255,.7);
+  color: var(--accent); text-shadow: 0 0 6px rgba(255,178,62,.75); font-family: 'Courier New', monospace; }
+html.skeu .mini-sub { color: rgba(255,178,62,.7); }
+html.skeu .mini .icon-btn { color: var(--metal-text); filter: drop-shadow(0 1px 0 rgba(255,255,255,.8)); }
+html.skeu .mini .pp { color: var(--metal-text); filter: drop-shadow(0 1px 0 rgba(255,255,255,.8)); }
+html.skeu .mini .pp .spinner { border-color: rgba(0,0,0,.15); border-top-color: var(--metal-text); }
+html.skeu .mini-progress { left: 64px; right: 104px; bottom: 9px; height: 2px; background: rgba(255,178,62,.15); }
+html.skeu .mini-progress div { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
+
+/* seek bar: recessed groove, glowing fill, chrome knob */
+html.skeu .seek input, html.skeu .volume { height: 6px; border-radius: 3px;
+  background: linear-gradient(to right, var(--accent) var(--v), #0f0d0b var(--v)); box-shadow: inset 0 1px 2px #000, 0 1px 0 rgba(255,255,255,.12); }
+html.skeu .seek input::-webkit-slider-thumb, html.skeu .volume::-webkit-slider-thumb { width: 20px; height: 20px;
+  background: radial-gradient(circle at 50% 35%, #fff, #c8cacd 55%, #8d9095); box-shadow: 0 0 0 1px #3a3c40, 0 2px 4px rgba(0,0,0,.7); }
+html.skeu .seek input::-moz-range-thumb, html.skeu .volume::-moz-range-thumb { width: 20px; height: 20px;
+  background: radial-gradient(circle at 50% 35%, #fff, #c8cacd 55%, #8d9095); box-shadow: 0 0 0 1px #3a3c40, 0 2px 4px rgba(0,0,0,.7); }
+
+/* transport: chrome buttons on a metal console */
+html.skeu .controls.big { padding: 14px 12px; border-radius: 18px; background: var(--metal);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0,0,0,.2), 0 0 0 1px #3a3c40, 0 10px 24px rgba(0,0,0,.7); }
+html.skeu .controls.big .icon-btn, html.skeu .controls.big .icon-btn:not(.active) { color: var(--metal-text); filter: drop-shadow(0 1px 0 rgba(255,255,255,.85)); }
+html.skeu .controls.big .icon-btn.active { color: #e08400; filter: drop-shadow(0 0 5px rgba(255,160,30,.9)); }
+html.skeu .controls.big .icon-btn { width: 54px; height: 54px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #ffffff, #d6d8db 60%, #b9bcc0); box-shadow: 0 0 0 1px #6a6c70, 0 3px 6px rgba(0,0,0,.4), inset 0 -2px 3px rgba(0,0,0,.15); }
+html.skeu .controls.big .icon-btn:active { box-shadow: 0 0 0 1px #6a6c70, inset 0 3px 6px rgba(0,0,0,.35); }
+html.skeu .controls.big .icon-btn:first-child, html.skeu .controls.big .icon-btn:last-child { width: 44px; height: 44px; }
+html.skeu .pp.big { width: 84px; height: 84px; color: var(--accent);
+  background: radial-gradient(circle at 50% 30%, #4a443e, #1a1714 75%);
+  box-shadow: 0 0 0 3px #8d9095, 0 0 0 5px #2a2c30, 0 6px 14px rgba(0,0,0,.7), inset 0 2px 0 rgba(255,255,255,.2); }
+html.skeu .pp.big svg { filter: drop-shadow(0 0 8px rgba(255,178,62,.9)); }
+html.skeu .pp.big .spinner { border-color: rgba(255,178,62,.2); border-top-color: var(--accent); }
+
+html.skeu .full { background: var(--leather); background-color: var(--bg); }
+html.skeu .full::before { background: linear-gradient(to bottom, color-mix(in srgb, var(--tint) 35%, transparent), transparent 60%); }
+html.skeu .full-bg { opacity: .12; }
+html.skeu .caps { color: var(--accent); text-shadow: 0 0 6px rgba(255,178,62,.7); font-family: 'Courier New', monospace; font-weight: 700; }
+html.skeu .full-art { position: relative; filter: none; }
+html.skeu .full-art .art { border-radius: 3px !important; z-index: 1; box-shadow: 0 0 0 1px rgba(0,0,0,.8), 6px 0 12px rgba(0,0,0,.6), 0 26px 40px rgba(0,0,0,.75); }
+/* the vinyl peeks out of the sleeve and spins while playing */
+html.skeu .vinyl { position: absolute; top: 3%; bottom: 3%; aspect-ratio: 1; right: 3%; z-index: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle, #111 0 2.2%, transparent 2.4%),
+    conic-gradient(from 0deg, #e8961f 0 40deg, var(--accent) 40deg 360deg) center / 34% 34% no-repeat,
+    radial-gradient(circle, transparent 0 16.6%, #080808 17% 18.2%, transparent 18.4% 69%, #050505 69.5%),
+    repeating-radial-gradient(circle, #161616 0 1.2px, #232323 1.6px 3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.85), inset 0 0 0 2px #050505; transition: right .6s cubic-bezier(.3,1.4,.5,1);
+  animation: vinyl 1.8s linear infinite; animation-play-state: paused; }
+/* light reflection: counter-rotates so it stays still while the record spins */
+html.skeu .vinyl::after { content: ''; position: absolute; inset: 0; border-radius: 50%; animation: inherit; animation-direction: reverse;
+  background: conic-gradient(from 20deg, transparent, rgba(255,255,255,.14) 9%, transparent 18%, transparent 50%, rgba(255,255,255,.14) 59%, transparent 68%);
+  mask: radial-gradient(circle, transparent 17%, #000 18%); }
+html.skeu .full-art.playing .vinyl { right: -22%; animation-play-state: running; }
+html.skeu .full-art-wrap { padding-right: 12%; }
+@keyframes vinyl { to { rotate: 360deg; } }
+html.skeu .full-title-row { padding: 12px 14px; border-radius: 12px; background: linear-gradient(to bottom, #1b1408, #2b2010);
+  box-shadow: inset 0 2px 6px #000, 0 0 0 1px #0c0a08, 0 1px 0 rgba(255,255,255,.1); }
+html.skeu .full-title { color: var(--accent); text-shadow: 0 0 8px rgba(255,178,62,.8); font-family: 'Courier New', monospace; }
+html.skeu .full-artist { color: rgba(255,178,62,.72); text-shadow: 0 0 6px rgba(255,178,62,.45); font-family: 'Courier New', monospace; }
+html.skeu .full-title-row .icon-btn { color: #c9a26a; }
+html.skeu .full .seek { color: #cfc3b3; font-family: 'Courier New', monospace; font-weight: 700; }
+html.skeu .chip { background: var(--metal); color: var(--metal-text); text-shadow: 0 1px 0 #fff; border-radius: 10px;
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px #55575b, 0 4px 10px rgba(0,0,0,.6); }
+
+/* ---------- shell ---------- */
+html.skeu .bottom { background: none; }
+html.skeu .tabs { height: 66px; background: var(--metal); box-shadow: inset 0 1px 0 #fff, 0 -1px 0 #3a3c40, 0 -6px 14px rgba(0,0,0,.6); }
+html.skeu .tab { color: #55585d; text-shadow: 0 1px 0 rgba(255,255,255,.8); }
+html.skeu .tab svg { filter: drop-shadow(0 1px 0 rgba(255,255,255,.85)); }
+html.skeu .tab.on { color: #c46f00; }
+html.skeu .tab.on svg { color: var(--accent); filter: drop-shadow(0 0 5px rgba(255,160,30,.95)); }
+html.skeu .tab-pill { background: linear-gradient(to bottom, #9a9da2, #c5c8cc); box-shadow: inset 0 2px 4px rgba(0,0,0,.45), 0 1px 0 #fff; border-radius: 10px; }
+
+html.skeu .shell.wide { background: none; }
+html.skeu .shell.wide .main, html.skeu .side { background: var(--noise), linear-gradient(to bottom, #2a2622, #1d1a17); background-color: #221e1a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px #0c0a08, 0 6px 16px rgba(0,0,0,.6); }
+html.skeu .side { position: relative; }
+html.skeu .side::before { content: ''; position: absolute; inset: 6px; border: var(--stitch); border-radius: 12px; pointer-events: none; }
+html.skeu .logo { color: #f3e9dc; text-shadow: 0 -1px 0 #000; }
+html.skeu .side-item.on { color: var(--accent); text-shadow: 0 0 6px rgba(255,178,62,.6); }
+html.skeu .side-pill { background: linear-gradient(to bottom, #15120f, #26221e); box-shadow: var(--inset); }
+html.skeu .side-pl:hover, html.skeu .side-pl.on, html.skeu .side-me:hover { background: rgba(0,0,0,.25); box-shadow: inset 0 1px 3px rgba(0,0,0,.6); }
+html.skeu .me-avatar { box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 0 0 2px #15120f; }
+html.skeu .bar { background: var(--metal); border-radius: 14px; color: var(--metal-text);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px #3a3c40, 0 6px 16px rgba(0,0,0,.6); }
+html.skeu .bar .track-title { color: var(--metal-text); text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+html.skeu .bar .track-sub, html.skeu .bar .dim, html.skeu .bar .seek { color: #55585d; }
+html.skeu .bar .icon-btn { color: var(--metal-text); filter: drop-shadow(0 1px 0 rgba(255,255,255,.8)); }
+html.skeu .bar .icon-btn.active { color: #e08400; filter: drop-shadow(0 0 4px rgba(255,160,30,.9)); }
+html.skeu .bar-center .pp { color: var(--accent); background: radial-gradient(circle at 50% 30%, #4a443e, #1a1714 75%);
+  box-shadow: 0 0 0 2px #8d9095, 0 3px 6px rgba(0,0,0,.6); }
+html.skeu .bar-center .pp .spinner { border-color: rgba(255,178,62,.2); border-top-color: var(--accent); }
+html.skeu .empty-bar .dim { color: #55585d; text-shadow: 0 1px 0 #fff; }
