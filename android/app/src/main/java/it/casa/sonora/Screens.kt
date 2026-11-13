@@ -89,6 +89,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -654,7 +655,8 @@ fun ArtistScreen(id: String, nav: NavController) {
         Box(Modifier.fillMaxSize()) {
             LazyColumn(state = list, contentPadding = PaddingValues(bottom = 24.dp)) {
                 item {
-                    Box(Modifier.fillMaxWidth().height(340.dp)) {
+                    // clipped: the parallax would push the photo down over the rows below
+                    Box(Modifier.fillMaxWidth().height(340.dp).clipToBounds()) {
                         val off = if (list.firstVisibleItemIndex == 0) list.firstVisibleItemScrollOffset else 0
                         Artwork(
                             a.thumb, Modifier.fillMaxSize().graphicsLayer { translationY = off * .45f; val s = 1f + off / 2400f; scaleX = s; scaleY = s },

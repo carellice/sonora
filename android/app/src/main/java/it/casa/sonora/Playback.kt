@@ -180,8 +180,10 @@ object Playback {
     fun play(list: List<Track>, index: Int = 0, shuffled: Boolean = false) {
         val c = controller ?: return
         if (list.isEmpty()) return
-        c.shuffleModeEnabled = shuffled
-        c.setMediaItems(list.map(::item), if (shuffled) list.indices.random() else index, 0)
+        // "Casuale" plays a shuffled copy in order: with shuffle mode and a random start index the start
+        // could be the last of ExoPlayer's shuffle order, leaving no next track.
+        c.shuffleModeEnabled = false
+        c.setMediaItems((if (shuffled) list.shuffled() else list).map(::item), if (shuffled) 0 else index, 0)
         c.prepare()
         c.play()
     }

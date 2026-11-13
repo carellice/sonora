@@ -231,7 +231,8 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
             enter = slideInVertically(spring(dampingRatio = .85f, stiffness = 380f)) { it } + fadeIn(),
             exit = slideOutVertically(tween(280)) { it } + fadeOut(tween(280)),
         ) { FullPlayer { playerOpen = false } }
-        BackHandler(playerOpen) { playerOpen = false }
+        // composed only while open, so it registers after NavHost's handler and wins over it
+        if (playerOpen) BackHandler { playerOpen = false }
 
         UpdateBanner(update, onDismiss = { update = null })
         TrackMenu(nav) { playerOpen = false }
