@@ -144,11 +144,10 @@ object Downloads {
         var where: Uri? = null
         val ok = runCatching {
             withContext(Dispatchers.IO) {
-                val c = URL(Api.streamUrl(t.id)).openConnection() as HttpURLConnection
-                synchronized(conns) { conns[t.id] = c }
+                // The tagged file; a server from before it only has the plain stream.
+                var c = open(t.id, Api.downloadUrl(t))
+                if (c.responseCode == 404) { c.disconnect(); c = open(t.id, Api.streamUrl(t.id)) }
                 try {
-                    c.connectTimeout = 30_000
-                    c.readTimeout = 90_000 // the first byte waits for the server to resolve the song
                     if (c.responseCode !in 200..299) error("HTTP ${c.responseCode}")
                     val total = c.contentLengthLong
                     val (uri, open) = target(t)
@@ -196,6 +195,14 @@ object Downloads {
             where?.let { delete(it) }
             if (!cancelled) Toast.makeText(app, "Download non riuscito: ${t.title}", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun open(id: String, url: String): HttpURLConnection {
+        val c = URL(url).openConnection() as HttpURLConnection
+        synchronized(conns) { conns[id] = c }
+        c.connectTimeout = 30_000
+        c.readTimeout = 120_000 // the first byte waits for the server to fetch and tag the whole song
+        return c
     }
 
     private fun delete(uri: Uri) {

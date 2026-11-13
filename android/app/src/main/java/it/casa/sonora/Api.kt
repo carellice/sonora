@@ -114,6 +114,10 @@ object Api {
 
     fun streamUrl(id: String) = "$base/api/stream/$id"
 
+    /** The whole song with title, artist, album and cover written in the file, for the downloads. */
+    fun downloadUrl(t: Track) = "$base/api/download/${t.id}?title=${enc(t.title)}&artist=${enc(t.artist)}" +
+        "&album=${enc(t.album.orEmpty())}&thumb=${enc(t.thumb.orEmpty())}"
+
     suspend fun health(root: String): Boolean = JSONObject(req("GET", "/api/health", root = root)).optBoolean("ok")
 
     suspend fun searchSongs(q: String) = arr("/api/search?type=song&q=${enc(q)}").map(Track::from)

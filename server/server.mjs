@@ -2,12 +2,13 @@
 // search/browse, one library per profile, audio streamed through this server because googlevideo
 // URLs are bound to the server's IP) and the Android APK, downloaded from the GitHub releases.
 import http from 'node:http';
-import { readFile, writeFile, rename, stat } from 'node:fs/promises';
-import { readFileSync, createReadStream } from 'node:fs';
+import { readFile, writeFile, rename, stat, rm } from 'node:fs/promises';
+import { readFileSync, createReadStream, createWriteStream } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { randomUUID } from 'node:crypto';
 import { Innertube } from 'youtubei.js';
 
@@ -215,6 +216,46 @@ async function stream(id, req, res) {
   } catch { res.destroy(); } // client gone or upstream error: close, the player retries
 }
 
+// ---------- download ----------
+// The whole song as a file for the phone, with title, artist, album and cover written in it: the stream alone has none.
+// mutagen comes with yt-dlp[default]; if tagging fails the song is sent as it is.
+const TAG = String.raw`import sys
+from mutagen.mp4 import MP4, MP4Cover
+f, title, artist, album, cover = sys.argv[1:6]
+m = MP4(f)
+m['\xa9nam'] = [title]
+if artist: m['\xa9ART'] = [artist]; m['aART'] = [artist.split(', ')[0]]
+if album: m['\xa9alb'] = [album]
+if cover:
+    data = open(cover, 'rb').read()
+    m['covr'] = [MP4Cover(data, MP4Cover.FORMAT_PNG if data[:4] == b'\x89PNG' else MP4Cover.FORMAT_JPEG)]
+m.save()`;
+const COVER_HOSTS = /(^|\.)(googleusercontent\.com|ytimg\.com|ggpht\.com)$/;
+
+async function download(id, q, res) {
+  const tmp = join(DATA, `download-${randomUUID()}`);
+  try {
+    const r = await fetch(`http://127.0.0.1:${PORT}/api/stream/${id}`);
+    if (!r.ok || !r.body) throw new Error(`stream ${r.status}`);
+    await pipeline(Readable.fromWeb(r.body), createWriteStream(`${tmp}.m4a`));
+    let cover = '';
+    const thumb = q.get('thumb');
+    if (thumb && /^https:$/.test(new URL(thumb).protocol) && COVER_HOSTS.test(new URL(thumb).hostname)) {
+      const c = await fetch(thumb).catch(() => null);
+      if (c?.ok) { cover = `${tmp}.cover`; await writeFile(cover, Buffer.from(await c.arrayBuffer())); }
+    }
+    const field = (k) => (q.get(k) ?? '').slice(0, 300);
+    await new Promise((ok) => execFile('python3', ['-c', TAG, `${tmp}.m4a`, field('title') || id, field('artist'), field('album'), cover],
+      { timeout: 30000 }, (err) => { if (err) console.error('tag', id, err.message); ok(); }));
+    const { size } = await stat(`${tmp}.m4a`);
+    res.writeHead(200, { 'content-type': 'audio/mp4', 'content-length': size });
+    await pipeline(createReadStream(`${tmp}.m4a`), res);
+  } finally {
+    await rm(`${tmp}.m4a`, { force: true });
+    await rm(`${tmp}.cover`, { force: true });
+  }
+}
+
 // ---------- profiles & libraries ----------
 async function saveJson(file, v) {
   await writeFile(file + '.tmp', JSON.stringify(v));
@@ -340,6 +381,7 @@ async function route(req, res) {
   if (a === 'playlist' && b) return json(res, 200, await playlist(b));
   if (a === 'radio' && b) return json(res, 200, await radio(b));
   if (a === 'stream' && b) return stream(b, req, res);
+  if (a === 'download' && b && m === 'GET') return download(b, u.searchParams, res);
   if (a === 'prepare' && b) { fastUrl(b); resolveUrl(b).catch(() => {}); return json(res, 202, { ok: true }); } // warm the URL cache for upcoming tracks
 
   if (a === 'users') {
