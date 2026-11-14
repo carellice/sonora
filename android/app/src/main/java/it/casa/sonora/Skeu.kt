@@ -41,14 +41,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.random.Random
 
-/** Graphic style picked in Impostazioni → Stile grafica: the default one or skeuomorphism ("Hi-Fi"). */
+/** Graphic style picked in Impostazioni → Stile grafica: "classic", "skeu" (skeuomorphism, "Hi-Fi") or "metro" (Modern UI). */
 object Skin {
-    var skeu by mutableStateOf(false)
+    val styles = listOf("classic", "skeu", "metro")
+    var style by mutableStateOf("classic")
         private set
+    val skeu get() = style == "skeu"
+    val metro get() = style == "metro"
     private var prefs: SharedPreferences? = null
 
-    fun init(p: SharedPreferences) { prefs = p; skeu = p.getString("skin", "") == "skeu" }
-    fun set(v: Boolean) { skeu = v; prefs?.edit()?.putString("skin", if (v) "skeu" else "classic")?.apply() }
+    fun init(p: SharedPreferences) { prefs = p; style = p.getString("skin", "")?.takeIf { it in styles } ?: "classic" }
+    fun set(v: String) { style = v; prefs?.edit()?.putString("skin", v)?.apply() }
 }
 
 // ---- palette: dark leather, brushed aluminium, amber LED ----

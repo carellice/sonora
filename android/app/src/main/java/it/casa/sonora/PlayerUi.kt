@@ -13,6 +13,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -121,6 +122,7 @@ fun MiniPlayer(onOpen: () -> Unit) {
     val (pos, dur) = rememberPosition()
     val src = remember { MutableInteractionSource() }
     if (Skin.skeu) return SkeuMiniPlayer(t, pos, dur, src, onOpen)
+    if (Skin.metro) return MetroMiniPlayer(t, pos, dur, src, onOpen)
     Box(
         Modifier.padding(horizontal = 8.dp, vertical = 6.dp).fillMaxWidth().pressScale(src)
             .shadow(16.dp, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp))
@@ -177,17 +179,44 @@ private fun SkeuMiniPlayer(t: Track, pos: Long, dur: Long, src: MutableInteracti
     }
 }
 
+/** Modern UI: a flat chrome strip, square cover flush left, thin accent progress line on top. */
+@Composable
+private fun MetroMiniPlayer(t: Track, pos: Long, dur: Long, src: MutableInteractionSource, onOpen: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().background(Color(0xFF2B2B2B))
+            .clickable(interactionSource = src, indication = ripple(), onClick = onOpen)
+            .pointerInput(Unit) { detectVerticalDragGestures { _, dy -> if (dy < -12) onOpen() } },
+    ) {
+        Box(Modifier.fillMaxWidth().height(3.dp)) {
+            Box(Modifier.fillMaxWidth(if (dur > 0) (pos.toFloat() / dur).coerceIn(0f, 1f) else 0f).height(3.dp).background(MetroAccent))
+        }
+        Row(Modifier.swipeTracks(), verticalAlignment = Alignment.CenterVertically) {
+            AnimatedContent(t, label = "miniart", transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }) {
+                Artwork(it.thumb, Modifier.size(58.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Marquee(t.title.lowercase(), size = 17)
+                Text(t.artist.lowercase(), color = MetroSubtle, fontSize = 13.sp, maxLines = 1)
+            }
+            PlayPauseIcon(Modifier.size(40.dp).ring(), small = true)
+            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Color.White) }
+        }
+    }
+}
+
 @Composable
 fun PlayPauseIcon(modifier: Modifier, small: Boolean) {
     val playing = Playback.isPlaying
     val skeu = Skin.skeu
     // skeuomorphism: dark icon on the metal faceplate (small), amber-lit knob in a metal ring (big)
-    val fg = when { skeu && small -> MetalText; skeu -> Amber; small -> Color.White; else -> Bg }
+    val fg = when { skeu && small -> MetalText; skeu -> Amber; small || Skin.metro -> Color.White; else -> Bg }
     Box(
         modifier.then(
             when {
                 skeu && !small -> Modifier.clip(CircleShape).background(Brush.verticalGradient(listOf(Color(0xFFE0E2E5), Color(0xFF6A6C70)))).padding(4.dp)
                     .clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF4A443E), Color(0xFF1A1714))))
+                Skin.metro && !small -> Modifier.ring()
                 else -> Modifier.clip(CircleShape).background(if (small) Color.Transparent else Color.White)
             },
         ).clickable { Playback.toggle() },
@@ -197,7 +226,7 @@ fun PlayPauseIcon(modifier: Modifier, small: Boolean) {
         else AnimatedContent(playing, label = "pp", transitionSpec = { scaleIn(tween(180)) + fadeIn() togetherWith scaleOut(tween(120)) + fadeOut() }) { p ->
             Icon(
                 if (p) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (p) "Pausa" else "Riproduci",
-                tint = fg, modifier = Modifier.size(if (small) 30.dp else 42.dp),
+                tint = fg, modifier = Modifier.size(if (small) (if (Skin.metro) 24.dp else 30.dp) else 42.dp),
             )
         }
     }
@@ -208,6 +237,9 @@ fun PlayPauseIcon(modifier: Modifier, small: Boolean) {
 private fun Transport(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, size: Int, iconSize: Int, tint: Color, onClick: () -> Unit) {
     if (Skin.skeu) Box(Modifier.size((size - 6).dp).chrome().clickable(onClick = onClick), contentAlignment = Alignment.Center) {
         Icon(icon, label, tint = tint, modifier = Modifier.size((iconSize * .8f).dp))
+    }
+    else if (Skin.metro) Box(Modifier.size((size - 8).dp).ring(tint).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+        Icon(icon, label, tint = tint, modifier = Modifier.size((iconSize * .62f).dp))
     }
     else IconButton(onClick = onClick, modifier = Modifier.size(size.dp)) { Icon(icon, label, tint = tint, modifier = Modifier.size(iconSize.dp)) }
 }
@@ -227,7 +259,8 @@ fun FullPlayer(onClose: () -> Unit) {
     val dragY = remember { Animatable(0f) }
     val skeu = Skin.skeu
     // skeuomorphism: the sleeve stays put and the record slides out instead
-    val artScale by animateFloatAsState(if (Playback.isPlaying || skeu) 1f else .86f, spring(dampingRatio = .55f, stiffness = 260f), label = "art")
+    val metro = Skin.metro
+    val artScale by animateFloatAsState(if (Playback.isPlaying || skeu || metro) 1f else .86f, spring(dampingRatio = .55f, stiffness = 260f), label = "art")
     val vinylOut by animateFloatAsState(if (Playback.isPlaying) 1f else 0f, spring(dampingRatio = .6f, stiffness = 120f), label = "vinyl")
     val lightText = if (skeu) Color(0xFFCFC3B3) else Color.White.copy(alpha = .7f)
 
@@ -237,6 +270,7 @@ fun FullPlayer(onClose: () -> Unit) {
             .background(Bg)
             .then(
                 if (skeu) Modifier.leather().background(Brush.verticalGradient(0f to tint.copy(alpha = .35f), .6f to Color.Transparent))
+                else if (metro) Modifier
                 else Modifier.background(Brush.verticalGradient(listOf(tint, tint.copy(alpha = .55f), Bg))),
             )
             .pointerInput(Unit) {
@@ -252,8 +286,9 @@ fun FullPlayer(onClose: () -> Unit) {
                 IconButton(onClick = onClose) { Icon(Icons.Rounded.KeyboardArrowDown, "Chiudi", tint = Color.White, modifier = Modifier.size(32.dp)) }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (skeu) Text("IN RIPRODUZIONE", fontSize = 11.sp, letterSpacing = 1.5.sp, color = Amber, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, style = glow())
+                    else if (metro) MetroTitle("Sonora · In riproduzione")
                     else Text("IN RIPRODUZIONE", fontSize = 11.sp, letterSpacing = 1.5.sp, color = Color.White.copy(alpha = .7f))
-                    Text(t.album ?: t.artist, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    if (!metro) Text(t.album ?: t.artist, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
                 IconButton(onClick = { Ui.menu = MenuReq(t) }) { Icon(Icons.Rounded.MoreVert, "Opzioni", tint = Color.White) }
             }
@@ -280,6 +315,14 @@ fun FullPlayer(onClose: () -> Unit) {
                         RoundedCornerShape(3.dp),
                     )
                 }
+                else if (metro) Column {
+                    // Windows Phone "now playing": huge lowercase artist name bleeding off the edge, flat square cover
+                    Text(
+                        cur.artist.lowercase(), fontSize = 54.sp, fontWeight = FontWeight.Light, maxLines = 1, softWrap = false,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Clip, modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                    Artwork(cur.thumb, Modifier.fillMaxWidth().aspectRatio(1f))
+                }
                 else Artwork(
                     cur.thumb,
                     Modifier.fillMaxWidth().aspectRatio(1f).graphicsLayer { scaleX = artScale; scaleY = artScale }
@@ -297,6 +340,9 @@ fun FullPlayer(onClose: () -> Unit) {
                         Marquee(t.title, size = 20, weight = FontWeight.Bold, color = LcdText, style = glow(), mono = true)
                         Spacer(Modifier.height(2.dp))
                         Marquee(t.artist, size = 15, color = LcdText.copy(alpha = .72f), mono = true)
+                    } else if (metro) {
+                        Marquee(t.title.lowercase(), size = 26, weight = FontWeight.Light)
+                        Text((t.album ?: t.artist).lowercase(), fontSize = 15.sp, color = MetroSubtle, maxLines = 1)
                     } else {
                         Marquee(t.title, size = 22, weight = FontWeight.ExtraBold)
                         Spacer(Modifier.height(2.dp))
@@ -319,6 +365,7 @@ fun FullPlayer(onClose: () -> Unit) {
                 onValueChange = { dragging = true; dragValue = it },
                 onValueChangeFinished = { Playback.seek((dragValue * dur).toLong()); dragging = false },
                 colors = if (skeu) SliderDefaults.colors(thumbColor = Color(0xFFE6E8EB), activeTrackColor = Amber, inactiveTrackColor = Color.Black.copy(alpha = .6f))
+                else if (metro) SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = MetroAccent, inactiveTrackColor = Color(0xFF333333))
                 else SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = .2f)),
             )
             Row(Modifier.fillMaxWidth()) {
@@ -330,7 +377,7 @@ fun FullPlayer(onClose: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             // skeuomorphism: chrome buttons on a brushed-metal console, toggles lit amber when on
             val on = if (skeu) Color(0xFFE08400) else Accent
-            val off = if (skeu) MetalText else Color.White.copy(alpha = .75f)
+            val off = if (skeu) MetalText else if (metro) Color(0xFF777777) else Color.White.copy(alpha = .75f)
             val main = if (skeu) MetalText else Color.White
             Row(
                 Modifier.fillMaxWidth().then(if (skeu) Modifier.metal(RoundedCornerShape(18.dp), 14.dp).padding(horizontal = 12.dp, vertical = 12.dp) else Modifier),
@@ -338,7 +385,7 @@ fun FullPlayer(onClose: () -> Unit) {
             ) {
                 Transport(Icons.Rounded.Shuffle, "Casuale", 48, 24, if (Playback.shuffle) on else off) { Playback.toggleShuffle() }
                 Transport(Icons.Rounded.SkipPrevious, "Precedente", 60, 42, main) { Playback.previous() }
-                PlayPauseIcon(Modifier.size(if (skeu) 84.dp else 76.dp).shadow(20.dp, CircleShape), small = false)
+                PlayPauseIcon(Modifier.size(if (skeu) 84.dp else 76.dp).then(if (metro) Modifier else Modifier.shadow(20.dp, CircleShape)), small = false)
                 Transport(Icons.Rounded.SkipNext, "Successivo", 60, 42, main) { Playback.next() }
                 Transport(
                     if (Playback.repeat == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Ripeti", 48, 24,
@@ -348,13 +395,16 @@ fun FullPlayer(onClose: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Row(
                 Modifier.align(Alignment.CenterHorizontally)
-                    .then(if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 4.dp) else Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = .08f)))
+                    .then(
+                        if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 4.dp) else if (metro) Modifier.border(2.dp, Color.White)
+                        else Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = .08f)),
+                    )
                     .clickable { showQueue = true }.padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, tint = main, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Prossimi brani", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = main, style = if (skeu) OnMetal else androidx.compose.ui.text.TextStyle.Default)
+                Text("Prossimi brani".mt(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = main, style = if (skeu) OnMetal else androidx.compose.ui.text.TextStyle.Default)
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -362,7 +412,10 @@ fun FullPlayer(onClose: () -> Unit) {
 
     if (showQueue) ModalBottomSheet(onDismissRequest = { showQueue = false }, containerColor = CardHi) {
         val q = remember(Playback.queueVersion) { Playback.upNext() }
-        Text("Prossimi brani", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 20.dp, bottom = 8.dp))
+        Text(
+            "Prossimi brani".mt(), fontSize = if (Skin.metro) 30.sp else 20.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.Bold,
+            modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
+        )
         if (q.isEmpty()) Text("La coda è vuota", color = Dim, modifier = Modifier.padding(20.dp))
         LazyColumn(Modifier.fillMaxWidth()) {
             items(q, key = { "${it.first}-${it.second.id}" }) { (i, tr) ->

@@ -15,6 +15,7 @@ const GRADIENTS = [
 function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; return h }
 export const profileGradient = (id) => {
   const [a, b] = GRADIENTS[((hashCode(id) % GRADIENTS.length) + GRADIENTS.length) % GRADIENTS.length]
+  if (document.documentElement.classList.contains('metro')) return a // flat tiles in Modern UI
   return `linear-gradient(135deg, ${a}, ${b})`
 }
 
@@ -90,7 +91,7 @@ export function LibraryScreen({ onSettings }) {
   return (
     <div className="screen">
       <div className="head">
-        <h1>Libreria</h1>
+        <h1 className="pivot-title">Libreria</h1>
         {loading && <Spinner size={20} />}
         {onSettings && <IconButton name="settings" label="Impostazioni" className="dim mobile-only" onClick={onSettings} />}
       </div>

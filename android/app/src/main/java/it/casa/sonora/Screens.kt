@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -129,17 +130,18 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
     Box(
-        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .35f), Bg, Bg)))
+        Modifier.fillMaxSize().background(if (Skin.metro) Brush.verticalGradient(listOf(Bg, Bg)) else Brush.verticalGradient(listOf(Accent2.copy(alpha = .35f), Bg, Bg)))
             .imePadding().verticalScroll(rememberScrollState()),
         contentAlignment = Alignment.Center,
     ) {
         AnimatedVisibility(shown, enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { it / 6 }) {
             Column(Modifier.statusBarsPadding().padding(28.dp).padding(top = 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(96.dp).shadow(24.dp, CircleShape, spotColor = Accent).clip(CircleShape).background(AccentBrush), contentAlignment = Alignment.Center) {
+                val logo = if (Skin.metro) androidx.compose.ui.graphics.RectangleShape else CircleShape
+                Box(Modifier.size(96.dp).shadow(if (Skin.metro) 0.dp else 24.dp, logo, spotColor = Accent).clip(logo).background(AccentBrush), contentAlignment = Alignment.Center) {
                     Icon(Icons.Rounded.MusicNote, null, tint = Color.White, modifier = Modifier.size(48.dp))
                 }
                 Spacer(Modifier.height(24.dp))
-                Text("Benvenuto in Sonora", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+                Text("Benvenuto in Sonora".mt(), fontSize = if (Skin.metro) 34.sp else 28.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold)
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "Inserisci l'indirizzo HTTPS del proxy Tailscale del tuo server di casa.",
@@ -150,7 +152,7 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
                     url, { url = it; error = null }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     label = { Text("Indirizzo server") },
                     placeholder = { Text("https://casaos.tailxxxx.ts.net:10008") },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = corner(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, focusedLabelColor = Accent, cursorColor = Accent),
                     isError = error != null,
                 )
@@ -176,7 +178,22 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
 // ---------------- Library ----------------
 
 @Composable
-fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, pivot: Boolean = true) {
+    if (Skin.metro) {
+        if (pivot) PivotHeaders(tabs, selected, onSelect, modifier)
+        // a row of square toggles: the chosen one filled with the accent colour
+        else Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            tabs.forEachIndexed { i, t ->
+                val bg by animateColorAsState(if (i == selected) MetroAccent else Color.Transparent, label = "tgl")
+                Box(
+                    Modifier.weight(1f).height(44.dp).background(bg).border(2.dp, if (i == selected) MetroAccent else Color.White)
+                        .clickable { onSelect(i) },
+                    contentAlignment = Alignment.Center,
+                ) { Text(t.lowercase(), fontSize = 11.sp, maxLines = 1, color = Color.White, softWrap = false) }
+            }
+        }
+        return
+    }
     // skeuomorphism: a brushed-metal rocker whose active key is pressed in and lit amber
     val skeu = Skin.skeu
     val r = if (skeu) 8.dp else 17.dp
@@ -196,7 +213,7 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        t, color = c, fontWeight = FontWeight.SemiBold, fontSize = if (tabs.size > 4) 12.sp else 13.sp, maxLines = 1,
+                        t, color = c, fontWeight = FontWeight.SemiBold, fontSize = if (tabs.size > 4 || tabs.any { it.length > 10 }) 12.sp else 13.sp, maxLines = 1,
                         style = if (!skeu) androidx.compose.ui.text.TextStyle.Default else if (i == selected) glow() else OnMetal,
                     )
                 }
@@ -224,14 +241,16 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
     ) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Libreria", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), style = skeuText())
+                if (Skin.metro) MetroTitle("Sonora · Libreria", Modifier.weight(1f))
+                else Text("Libreria", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), style = skeuText())
                 IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, "Impostazioni", tint = Dim) }
             }
-            SegmentedTabs(tabs, tab, { tab = it; filter = "" }, Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
+            val pick = { i: Int -> tab = i; filter = "" }
+            SegmentedTabs(tabs, tab, pick, if (Skin.metro) Modifier.padding(bottom = 8.dp) else Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
             SearchField(filter, { filter = it }, "Cerca in ${if (tab == 4) "scaricati" else tabs[tab].lowercase()}", Modifier.padding(horizontal = 16.dp))
             Spacer(Modifier.height(6.dp))
             AnimatedContent(
-                tab, label = "libtab",
+                tab, label = "libtab", modifier = Modifier.fillMaxSize().pivotSwipe(tabs.size, tab, pick),
                 transitionSpec = {
                     val dir = if (targetState > initialState) 1 else -1
                     (slideInHorizontally(tween(280)) { it / 5 * dir } + fadeIn(tween(280))) togetherWith
@@ -302,13 +321,13 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Box(
-                                        Modifier.size(56.dp).then(if (Skin.skeu) Modifier.glossAmber(RoundedCornerShape(8.dp)) else Modifier.clip(RoundedCornerShape(12.dp)).background(AccentBrush)),
+                                        Modifier.size(56.dp).then(if (Skin.skeu) Modifier.glossAmber(RoundedCornerShape(8.dp)) else Modifier.clip(corner(12.dp)).background(AccentBrush)),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Icon(Icons.Rounded.Add, null, tint = if (Skin.skeu) Color(0xFF4A2A00) else Color.White, modifier = Modifier.size(30.dp))
                                     }
                                     Spacer(Modifier.width(14.dp))
-                                    Text("Nuova playlist", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, style = skeuText())
+                                    Text("Nuova playlist".mt(), fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.SemiBold, fontSize = if (Skin.metro) 22.sp else 16.sp, style = skeuText())
                                 }
                             }
                             items(pls, key = { it.id }) { p ->
@@ -320,7 +339,10 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                                     Mosaic(p.tracks.mapNotNull { it.thumb }, Modifier.size(56.dp))
                                     Spacer(Modifier.width(14.dp))
                                     Column {
-                                        Text(p.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText())
+                                        Text(
+                                            p.name, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.SemiBold, fontSize = if (Skin.metro) 22.sp else 16.sp,
+                                            maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText(),
+                                        )
                                         Text(if (p.tracks.size == 1) "1 brano" else "${p.tracks.size} brani", color = Dim, fontSize = 13.sp)
                                     }
                                 }
@@ -390,7 +412,7 @@ fun PlayShuffleRow(tracks: List<Track>, onShuffle: () -> Unit = { Playback.play(
 fun Mosaic(thumbs: List<String>, modifier: Modifier) {
     val t = thumbs.distinct()
     if (t.size < 4) Artwork(t.firstOrNull(), modifier, RoundedCornerShape(12.dp), Icons.AutoMirrored.Rounded.QueueMusic)
-    else Column(modifier.clip(RoundedCornerShape(12.dp))) {
+    else Column(modifier.clip(corner(12.dp))) {
         Row(Modifier.weight(1f)) { Artwork(t[0], Modifier.weight(1f).fillMaxSize(), RoundedCornerShape(0.dp)); Artwork(t[1], Modifier.weight(1f).fillMaxSize(), RoundedCornerShape(0.dp)) }
         Row(Modifier.weight(1f)) { Artwork(t[2], Modifier.weight(1f).fillMaxSize(), RoundedCornerShape(0.dp)); Artwork(t[3], Modifier.weight(1f).fillMaxSize(), RoundedCornerShape(0.dp)) }
     }
@@ -404,10 +426,10 @@ fun NewNameDialog(title: String, action: String, onDismiss: () -> Unit, onCreate
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss, containerColor = CardHi,
-        title = { Text(title) },
+        title = { Text(title.mt()) },
         text = {
             OutlinedTextField(
-                name, { name = it }, singleLine = true, placeholder = { Text("Nome") }, shape = RoundedCornerShape(14.dp),
+                name, { name = it }, singleLine = true, placeholder = { Text("Nome") }, shape = corner(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, cursorColor = Accent),
             )
         },
@@ -443,13 +465,16 @@ fun SearchScreen(nav: NavController) {
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Text("Cerca", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp))
+        if (Skin.metro) {
+            MetroTitle("Sonora", Modifier.padding(start = 20.dp, top = 22.dp))
+            Text("cerca", fontSize = 56.sp, fontWeight = FontWeight.Light, modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
+        } else Text("Cerca", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp))
         SearchField(q, { q = it }, "Artisti, brani, album…", Modifier.padding(horizontal = 16.dp), big = true)
-        SegmentedTabs(types, type, { type = it }, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
-        Box(Modifier.fillMaxWidth().height(3.dp)) {
-            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Accent, trackColor = Color.Transparent)
+        SegmentedTabs(types, type, { type = it }, if (Skin.metro) Modifier.padding(top = 10.dp) else Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+        Box(Modifier.fillMaxWidth().height(4.dp)) {
+            if (loading) { if (Skin.metro) MetroDots() else LinearProgressIndicator(Modifier.fillMaxWidth(), color = Accent, trackColor = Color.Transparent) }
         }
-        when {
+        Box(Modifier.weight(1f).pivotSwipe(types.size, type) { type = it }) { when {
             q.isBlank() -> EmptyState(Icons.Rounded.Search, "Trova la tua musica", "Cerca tra milioni di brani, album, artisti e playlist di YouTube Music.")
             error -> EmptyState(Icons.Rounded.WifiOff, "Ricerca non riuscita", "Controlla la connessione al server e riprova.")
             !loading && results.isEmpty() -> EmptyState(Icons.Rounded.Search, "Nessun risultato", "Prova con parole diverse.")
@@ -475,7 +500,7 @@ fun SearchScreen(nav: NavController) {
                     }
                 }
             }
-        }
+        } }
     }
 }
 
@@ -485,7 +510,10 @@ fun SearchScreen(nav: NavController) {
 fun BackButton(nav: NavController, modifier: Modifier = Modifier) {
     IconButton(
         onClick = { nav.popBackStack() },
-        modifier = modifier.statusBarsPadding().padding(8.dp).size(40.dp).then(if (Skin.skeu) Modifier.knob() else Modifier.clip(CircleShape).background(Color.Black.copy(alpha = .35f))),
+        modifier = modifier.statusBarsPadding().padding(8.dp).size(40.dp).then(
+            if (Skin.skeu) Modifier.knob() else if (Skin.metro) Modifier.ring().background(Color.Black.copy(alpha = .5f))
+            else Modifier.clip(CircleShape).background(Color.Black.copy(alpha = .35f)),
+        ),
     ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Indietro", tint = Color.White) }
 }
 
@@ -507,7 +535,7 @@ fun <T> Loader(key: Any, load: suspend () -> T, content: @Composable (T) -> Unit
                 TextButton(onClick = { attempt++ }) { Text("Riprova", color = Accent) }
             }
         }
-        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent) }
+        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { if (Skin.metro) MetroDots() else CircularProgressIndicator(color = Accent) }
     }
 }
 
@@ -516,7 +544,7 @@ fun <T> Loader(key: Any, load: suspend () -> T, content: @Composable (T) -> Unit
 fun CollectionScreen(
     nav: NavController, title: String, subtitle: String, thumb: String?, tracks: List<Track>,
     numbered: Boolean, onSubtitle: (() -> Unit)? = null,
-    art: @Composable (Modifier) -> Unit = { Artwork(thumb, it, RoundedCornerShape(if (Skin.skeu) 4.dp else 18.dp)) },
+    art: @Composable (Modifier) -> Unit = { Artwork(thumb, it, corner(if (Skin.skeu) 4.dp else 18.dp)) },
     actions: @Composable () -> Unit = {}, localPlaylistId: String? = null,
 ) {
     val tint = rememberArtColor(thumb, Accent2.copy(alpha = .5f))
@@ -527,7 +555,7 @@ fun CollectionScreen(
             item {
                 Column(
                     Modifier.fillMaxWidth()
-                        .background(Brush.verticalGradient(if (Skin.skeu) listOf(tint.copy(alpha = .45f), Color.Transparent) else listOf(tint, Bg)))
+                        .background(Brush.verticalGradient(if (Skin.skeu) listOf(tint.copy(alpha = .45f), Color.Transparent) else if (Skin.metro) listOf(Bg, Bg) else listOf(tint, Bg)))
                         .statusBarsPadding().padding(top = 48.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -536,13 +564,16 @@ fun CollectionScreen(
                     val p = (with(density) { off.toDp().value } / 260f).coerceIn(0f, 1f)
                     art(
                         Modifier.size(240.dp).graphicsLayer { scaleX = 1f - p * .25f; scaleY = 1f - p * .25f; alpha = 1f - p; translationY = off * .5f }
-                            .shadow(28.dp, RoundedCornerShape(if (Skin.skeu) 4.dp else 18.dp)),
+                            .shadow(if (Skin.metro) 0.dp else 28.dp, corner(if (Skin.skeu) 4.dp else 18.dp)),
                     )
                     Spacer(Modifier.height(20.dp))
-                    Text(title, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, style = skeuText(), modifier = Modifier.padding(horizontal = 24.dp))
+                    Text(
+                        title.mt(), fontSize = if (Skin.metro) 32.sp else 24.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center, style = skeuText(), modifier = Modifier.padding(horizontal = 24.dp),
+                    )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        subtitle, color = if (onSubtitle != null) Color.White.copy(alpha = .85f) else Dim, fontSize = 15.sp,
+                        subtitle, color = if (onSubtitle != null) (if (Skin.metro) MetroAccent else Color.White.copy(alpha = .85f)) else Dim, fontSize = 15.sp,
                         fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 24.dp).clip(RoundedCornerShape(8.dp))
                             .then(if (onSubtitle != null) Modifier.clickable(onClick = onSubtitle) else Modifier).padding(4.dp),
@@ -684,7 +715,11 @@ fun ArtistScreen(id: String, nav: NavController) {
                         )
                         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Bg.copy(alpha = .4f), Bg))))
                         Row(Modifier.align(Alignment.BottomStart).padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(a.name, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                a.name.mt(), fontSize = if (Skin.metro) 46.sp else 36.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold,
+                                lineHeight = if (Skin.metro) 48.sp else androidx.compose.ui.unit.TextUnit.Unspecified,
+                                style = skeuText(), modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                            )
                             HeartButton(Lib.hasArtist(a.id)) { Lib.scope.launch { Lib.toggleArtist(a) } }
                         }
                     }
@@ -715,7 +750,10 @@ fun ArtistScreen(id: String, nav: NavController) {
 }
 
 @Composable
-fun SectionTitle(t: String) = Text(t, fontSize = 20.sp, fontWeight = FontWeight.Bold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp))
+fun SectionTitle(t: String) = Text(
+    t.mt(), fontSize = if (Skin.metro) 30.sp else 20.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.Bold,
+    style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp),
+)
 
 // ---------------- Profiles ----------------
 
@@ -724,7 +762,9 @@ private val profileGradients = listOf(
     listOf(Color(0xFF10B981), Color(0xFF3B82F6)), listOf(Color(0xFFEC4899), Color(0xFFF97316)),
 )
 
-fun profileBrush(id: String) = Brush.linearGradient(profileGradients[Math.floorMod(id.hashCode(), profileGradients.size)])
+fun profileBrush(id: String): Brush = profileGradients[Math.floorMod(id.hashCode(), profileGradients.size)].let {
+    if (Skin.metro) androidx.compose.ui.graphics.SolidColor(it[0]) else Brush.linearGradient(it) // flat tiles in Modern UI
+}
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -745,11 +785,12 @@ fun ProfileScreen(onPick: (String) -> Unit) {
     }
 
     Column(
-        Modifier.fillMaxSize().then(if (Skin.skeu) Modifier else Modifier.background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg)))).statusBarsPadding(),
+        Modifier.fillMaxSize().then(if (Skin.skeu || Skin.metro) Modifier else Modifier.background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg)))).statusBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(64.dp))
-        Text("Chi ascolta?", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText())
+        if (Skin.metro) Text("chi ascolta?", fontSize = 44.sp, fontWeight = FontWeight.Light)
+        else Text("Chi ascolta?", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText())
         Spacer(Modifier.height(6.dp))
         Text("Ogni profilo ha la sua libreria e le sue playlist", color = Dim, fontSize = 15.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(36.dp))
@@ -759,7 +800,7 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                 EmptyState(Icons.Rounded.WifiOff, "Server non raggiungibile", "Controlla che Tailscale sia attivo.")
                 TextButton(onClick = { attempt++ }) { Text("Riprova", color = Accent) }
             }
-            list == null -> CircularProgressIndicator(color = Accent)
+            list == null -> if (Skin.metro) MetroDots() else CircularProgressIndicator(color = Accent)
             else -> LazyVerticalGrid(GridCells.Fixed(2), contentPadding = PaddingValues(horizontal = 24.dp), modifier = Modifier.weight(1f)) {
                 itemsIndexed(list, key = { _, p -> p.id }) { i, p ->
                     PopIn(i) {
@@ -767,7 +808,7 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                             p.name, Modifier.combinedClickable(onLongClick = { deleting = p }, onClick = { onPick(p.id) }),
                         ) {
                             Box(Modifier.fillMaxSize().background(profileBrush(p.id)), contentAlignment = Alignment.Center) {
-                                Text(p.name.take(1).uppercase(), fontSize = 48.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                                Text(p.name.take(1).uppercase(), fontSize = if (Skin.metro) 56.sp else 48.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold, color = Color.White)
                             }
                         }
                     }
@@ -777,11 +818,12 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                         ProfileBubble("Aggiungi", Modifier.clickable { creating = true }) {
                             Box(
                                 Modifier.fillMaxSize().then(
-                                    if (Skin.skeu) Modifier.background(Brush.radialGradient(listOf(Color(0xFF4A433C), Color(0xFF221E1A)))) else Modifier.background(Card),
+                                    if (Skin.skeu) Modifier.background(Brush.radialGradient(listOf(Color(0xFF4A433C), Color(0xFF221E1A))))
+                                    else if (Skin.metro) Modifier.border(2.dp, Color.White) else Modifier.background(Card),
                                 ),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(Icons.Rounded.Add, null, tint = Dim, modifier = Modifier.size(44.dp))
+                                Icon(Icons.Rounded.Add, null, tint = if (Skin.metro) Color.White else Dim, modifier = Modifier.size(44.dp))
                             }
                         }
                     }
@@ -818,7 +860,8 @@ private fun PopIn(index: Int, content: @Composable () -> Unit) {
     LaunchedEffect(Unit) { delay(70L * index); shown = true }
     val s by androidx.compose.animation.core.animateFloatAsState(if (shown) 1f else .6f, spring(dampingRatio = .55f, stiffness = 300f), label = "pop")
     val a by androidx.compose.animation.core.animateFloatAsState(if (shown) 1f else 0f, tween(250), label = "popa")
-    Box(Modifier.graphicsLayer { scaleX = s; scaleY = s; alpha = a }) { content() }
+    val metro = Skin.metro
+    Box(Modifier.graphicsLayer { if (metro) { rotationX = (1f - a) * 90f; cameraDistance = 10 * density } else { scaleX = s; scaleY = s }; alpha = a }) { content() }
 }
 
 @Composable
@@ -839,8 +882,12 @@ private fun ProfileBubble(name: String, click: Modifier, avatar: @Composable () 
                         )
                     },
             ) { avatar() }
-        } else Box(Modifier.size(116.dp).shadow(18.dp, CircleShape).clip(CircleShape).then(click)) { avatar() }
-        Spacer(Modifier.height(12.dp))
-        Text(name, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText())
+        } else if (Skin.metro) Box(Modifier.size(132.dp).then(click)) { avatar() } // square live tile
+        else Box(Modifier.size(116.dp).shadow(18.dp, CircleShape).clip(CircleShape).then(click)) { avatar() }
+        Spacer(Modifier.height(if (Skin.metro) 6.dp else 12.dp))
+        Text(
+            name.mt(), fontSize = if (Skin.metro) 20.sp else 17.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.SemiBold,
+            maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText(),
+        )
     }
 }

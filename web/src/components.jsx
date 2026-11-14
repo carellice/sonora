@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { uiIcons } from './icons.gen.ts'
 import { artColor, fmt, lib, libStore, player, playerStore, uiStore, useStore } from './core.js'
@@ -113,8 +113,11 @@ export function SearchField({ value, onChange, placeholder, big, autoFocus }) {
 }
 
 export function SegmentedTabs({ tabs, selected, onSelect, id }) {
+  const ref = useRef()
+  // Modern UI pivots overflow sideways: keep the chosen one in view
+  useEffect(() => { const el = ref.current?.querySelector('.on'); if (el) ref.current.scrollTo({ left: el.offsetLeft - ref.current.offsetLeft - 12, behavior: 'smooth' }) }, [selected])
   return (
-    <div className="seg">
+    <div className="seg" ref={ref}>
       {tabs.map((t, i) => (
         <button key={t} className={`seg-item ${i === selected ? 'on' : ''}`} onClick={() => onSelect(i)}>
           {i === selected && <motion.span layoutId={`seg-${id}`} className="seg-pill" transition={{ type: 'spring', stiffness: 500, damping: 34 }} />}

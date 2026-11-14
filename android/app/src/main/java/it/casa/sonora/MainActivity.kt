@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -189,7 +190,7 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                         exit = slideOutVertically { it } + fadeOut(),
                     ) { MiniPlayer { playerOpen = true } }
                     val skeu = Skin.skeu
-                    NavigationBar(
+                    if (Skin.metro) MetroAppBar(route, nav) { settings = true } else NavigationBar(
                         containerColor = if (skeu) Color.Transparent else Bg, tonalElevation = 0.dp,
                         modifier = if (skeu) Modifier.metal(RectangleShape, 12.dp) else Modifier,
                     ) {
@@ -222,17 +223,18 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
         ) { pad ->
             NavHost(
                 nav, "library", Modifier.padding(bottom = pad.calculateBottomPadding()), // screens handle the status bar themselves
-                enterTransition = { slideInHorizontally(tween(300)) { it / 8 } + fadeIn(tween(300)) },
-                exitTransition = { fadeOut(tween(200)) },
-                popEnterTransition = { fadeIn(tween(300)) },
-                popExitTransition = { slideOutHorizontally(tween(250)) { it / 8 } + fadeOut(tween(250)) },
+                // Modern UI: the page turnstiles in by itself (Turnstile), the navigator only cross-fades quickly
+                enterTransition = { if (Skin.metro) fadeIn(tween(120)) else slideInHorizontally(tween(300)) { it / 8 } + fadeIn(tween(300)) },
+                exitTransition = { fadeOut(tween(if (Skin.metro) 120 else 200)) },
+                popEnterTransition = { fadeIn(tween(if (Skin.metro) 120 else 300)) },
+                popExitTransition = { if (Skin.metro) fadeOut(tween(120)) else slideOutHorizontally(tween(250)) { it / 8 } + fadeOut(tween(250)) },
             ) {
-                composable("library") { LibraryScreen(nav) { settings = true } }
-                composable("search") { SearchScreen(nav) }
-                composable("album/{id}") { AlbumScreen(it.arguments?.getString("id") ?: "", nav) }
-                composable("artist/{id}") { ArtistScreen(it.arguments?.getString("id") ?: "", nav) }
-                composable("playlist/{id}") { PlaylistScreen(it.arguments?.getString("id") ?: "", nav) }
-                composable("local/{id}") { LocalPlaylistScreen(it.arguments?.getString("id") ?: "", nav) }
+                composable("library") { Turnstile { LibraryScreen(nav) { settings = true } } }
+                composable("search") { Turnstile { SearchScreen(nav) } }
+                composable("album/{id}") { Turnstile { AlbumScreen(it.arguments?.getString("id") ?: "", nav) } }
+                composable("artist/{id}") { Turnstile { ArtistScreen(it.arguments?.getString("id") ?: "", nav) } }
+                composable("playlist/{id}") { Turnstile { PlaylistScreen(it.arguments?.getString("id") ?: "", nav) } }
+                composable("local/{id}") { Turnstile { LocalPlaylistScreen(it.arguments?.getString("id") ?: "", nav) } }
             }
         }
 
@@ -251,25 +253,25 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
 
     if (settings) AlertDialog(
         onDismissRequest = { settings = false }, containerColor = CardHi,
-        title = { Text("Impostazioni") },
+        title = { Text("Impostazioni".mt()) },
         text = {
             Column {
                 Text("Stile grafica", fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
-                SegmentedTabs(listOf("Moderno", "Skeuomorfismo"), if (Skin.skeu) 1 else 0, { Skin.set(it == 1) })
+                SegmentedTabs(listOf("Moderno", "Skeuomorfismo", "Modern UI"), Skin.styles.indexOf(Skin.style), { Skin.set(Skin.styles[it]) }, pivot = false)
                 Spacer(Modifier.height(16.dp))
                 Text("Server: ${Api.base}", color = Dim, fontSize = 13.sp)
                 Spacer(Modifier.height(16.dp))
                 Text("Download", fontWeight = FontWeight.SemiBold)
                 Text(Downloads.folderName()?.let { "Cartella: $it" } ?: "Memoria dell'app (si cancella disinstallando l'app)", color = Dim, fontSize = 13.sp)
-                TextButton(onClick = { pickFolder.launch(null) }) { Text("Scegli una cartella del telefono", color = Accent, fontSize = 16.sp) }
-                if (Downloads.folder != null) TextButton(onClick = { Downloads.chooseFolder(null) }) { Text("Usa la memoria dell'app", color = Accent, fontSize = 16.sp) }
+                TextButton(onClick = { pickFolder.launch(null) }) { Text("Scegli una cartella del telefono".mt(), color = Accent, fontSize = 16.sp) }
+                if (Downloads.folder != null) TextButton(onClick = { Downloads.chooseFolder(null) }) { Text("Usa la memoria dell'app".mt(), color = Accent, fontSize = 16.sp) }
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = { settings = false; onChangeProfile() }) { Text("Cambia profilo", color = Accent, fontSize = 16.sp) }
-                TextButton(onClick = { settings = false; onChangeServer() }) { Text("Cambia server", color = Accent, fontSize = 16.sp) }
+                TextButton(onClick = { settings = false; onChangeProfile() }) { Text("Cambia profilo".mt(), color = Accent, fontSize = 16.sp) }
+                TextButton(onClick = { settings = false; onChangeServer() }) { Text("Cambia server".mt(), color = Accent, fontSize = 16.sp) }
             }
         },
-        confirmButton = { TextButton(onClick = { settings = false }) { Text("Chiudi", color = Dim) } },
+        confirmButton = { TextButton(onClick = { settings = false }) { Text("Chiudi".mt(), color = Dim) } },
     )
 }
 
@@ -283,8 +285,8 @@ fun UpdateBanner(info: ApkInfo?, onDismiss: () -> Unit) {
         exit = slideOutVertically { -it } + fadeOut(),
     ) {
         Row(
-            Modifier.statusBarsPadding().padding(12.dp).fillMaxWidth().shadow(16.dp, RoundedCornerShape(18.dp))
-                .clip(RoundedCornerShape(18.dp)).background(AccentBrush).padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            Modifier.statusBarsPadding().padding(12.dp).fillMaxWidth().shadow(16.dp, corner(18.dp))
+                .clip(corner(18.dp)).background(AccentBrush).padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Rounded.Download, null, tint = Color.White)
@@ -348,6 +350,7 @@ private fun MenuItem(icon: ImageVector, text: String, onClick: () -> Unit) {
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (Skin.metro) return@Row Text(text.lowercase(), fontSize = 21.sp, fontWeight = FontWeight.Light)
         Icon(icon, null, tint = if (Skin.skeu) Accent else Color.White)
         Spacer(Modifier.width(18.dp))
         Text(text, fontSize = 15.sp, style = skeuText())
@@ -375,7 +378,7 @@ fun AddToPlaylistDialog() {
     }
     AlertDialog(
         onDismissRequest = { Ui.addToPlaylist = null }, containerColor = CardHi,
-        title = { Text("Aggiungi a playlist") },
+        title = { Text("Aggiungi a playlist".mt()) },
         text = {
             LazyColumn {
                 item {
@@ -408,4 +411,40 @@ fun AddToPlaylistDialog() {
         },
         confirmButton = { TextButton(onClick = { Ui.addToPlaylist = null }) { Text("Chiudi", color = Dim) } },
     )
+}
+
+/** Modern UI application bar: round outlined buttons with lowercase labels, "•••" opens the settings. */
+@Composable
+private fun MetroAppBar(route: String?, nav: NavController, onMore: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(MetroChrome).navigationBarsPadding().padding(top = 8.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Spacer(Modifier.weight(1f))
+        listOf(Triple("library", "libreria", Icons.Rounded.LibraryMusic), Triple("search", "cerca", Icons.Rounded.Search)).forEach { (r, label, icon) ->
+            val on = route == r || (r == "library" && route !in setOf("library", "search") && nav.previousBackStackEntry?.destination?.route == "library")
+            Column(
+                Modifier.width(84.dp).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {
+                    nav.navigate(r) {
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    Modifier.size(44.dp).ring().background(if (on) Color.White else Color.Transparent),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(icon, label, tint = if (on) Color.Black else Color.White, modifier = Modifier.size(22.dp)) }
+                Spacer(Modifier.height(4.dp))
+                Text(label, fontSize = 12.sp, color = if (on) Color.White else MetroSubtle)
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        Text(
+            "•••", fontSize = 18.sp, letterSpacing = 2.sp, color = Color.White,
+            modifier = Modifier.clickable(onClick = onMore).padding(horizontal = 18.dp, vertical = 8.dp),
+        )
+    }
 }

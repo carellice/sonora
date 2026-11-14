@@ -150,6 +150,7 @@ export function FullPlayer() {
               </div>
               <IconButton name="more_vert" label="Opzioni" onClick={() => uiStore.set({ menu: { track: current } })} />
             </div>
+            <div className="full-big metro-only">{current.artist}</div>
             <div className="full-body">
               <motion.div className="full-art-wrap" style={{ touchAction: 'none' }} onPanEnd={(_, i) => swipeTracks(i)}>
                 <AnimatePresence mode="popLayout" initial={false}>

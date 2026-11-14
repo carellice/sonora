@@ -1,0 +1,184 @@
+/* Modern UI skin (Windows Phone): active when <html> has the class "metro" (Impostazioni → Stile grafica).
+   Pure black, flat, square, a single accent colour, big light lowercase type, pivots and round app-bar buttons. */
+html.metro {
+  --bg: #000;
+  --card: #1f1f1f;
+  --card-hi: #1f1f1f;
+  --accent: #1ba1e2;
+  --accent2: #1ba1e2;
+  --dim: #999;
+  --grad: var(--accent);
+  --chrome: #1f1f1f;
+}
+html.metro body { font-family: 'Segoe UI', 'Segoe WP', 'Open Sans', Roboto, system-ui, sans-serif; }
+html.metro .head h1, html.metro .profiles h1, html.metro .collection-info h2, html.metro .artist-name h1, html.metro .section,
+html.metro .empty-title, html.metro .dialog-title, html.metro .sheet-title {
+  font-weight: 300; text-transform: lowercase; letter-spacing: -.5px;
+}
+html.metro .head { align-items: flex-end; }
+html.metro .head h1 { font-size: 56px; line-height: 1; }
+/* library: small uppercase app title, the pivots are the headline */
+html.metro .head h1.pivot-title { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; line-height: 1.6; }
+html.metro .head h1.pivot-title::before { content: 'Sonora · '; }
+
+/* ---------- basics ---------- */
+html.metro .icon-btn:hover, html.metro .text-btn:hover { background: none; }
+html.metro .icon-btn.round, html.metro .back-btn { border: 2px solid #fff; background: rgba(0,0,0,.5) !important; backdrop-filter: none; }
+html.metro .icon-btn.round:active, html.metro .back-btn:active { background: #fff !important; color: #000; }
+html.metro .text-btn { min-width: 110px; padding: 10px 14px; border: 2px solid #fff; border-radius: 0; color: #fff; font-weight: 400; text-transform: lowercase; }
+html.metro .text-btn:active { background: var(--accent); border-color: var(--accent); }
+html.metro .art, html.metro .mosaic, html.metro .avatar, html.metro .new-pl, html.metro .track-art-eq { border-radius: 0 !important; }
+html.metro .art { background: #1f1f1f; }
+html.metro .art-ph { color: #555; }
+
+/* "flying dots" instead of bars and spinners */
+html.metro .progress { height: 4px; position: relative; }
+html.metro .progress-bar, html.metro .spinner::before {
+  position: absolute; top: 0; left: 0; width: 4px; height: 4px; background: var(--accent);
+  box-shadow: -12px 0 var(--accent), -24px 0 var(--accent), -36px 0 var(--accent), -48px 0 var(--accent);
+  animation: metro-dots 2.4s cubic-bezier(.1, .85, .9, .15) infinite;
+}
+html.metro .spinner { position: relative; width: 160px !important; height: 4px !important; border: 0; border-radius: 0; overflow: hidden; animation: none; }
+html.metro .spinner::before { content: ''; }
+@keyframes metro-dots { from { left: -2%; } to { left: 120%; } }
+
+/* ---------- lists and tiles ---------- */
+html.metro .track { margin: 0 12px; padding: 8px 0; border-radius: 0; }
+html.metro .track:hover { background: none; }
+html.metro .track.current { background: none; }
+html.metro .track-title { font-weight: 400; font-size: 18px; }
+html.metro .track-index { font-size: 20px; font-weight: 300; }
+html.metro .track:active, html.metro .card:active { opacity: .7; }
+html.metro .card { border-radius: 0; }
+html.metro .card:hover { background: none; }
+html.metro .card-title { font-weight: 400; font-size: 16px; }
+
+/* ---------- controls ---------- */
+/* text box: light grey, white once typed in, black text */
+html.metro .search { border-radius: 0; background: #ccc; color: #000; }
+html.metro .search.filled, html.metro .search:focus-within { background: #fff; }
+html.metro .search input::placeholder { color: #555; text-transform: lowercase; }
+html.metro .search .dim, html.metro .search .icon-btn { color: #555; }
+
+/* pivot headers */
+html.metro .seg { height: auto; padding: 0; border-radius: 0; background: none; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 12px; }
+html.metro .seg::-webkit-scrollbar { display: none; }
+html.metro .seg-item { flex: none; padding: 0 8px; font-size: 38px; font-weight: 300; text-transform: lowercase; color: #555; line-height: 1.25; }
+html.metro .seg-item.on { color: #fff; }
+html.metro .seg-pill { display: none; }
+/* in the settings it is a row of square toggles */
+html.metro .settings .seg { margin: 0; padding: 0; gap: 6px; overflow: visible; }
+html.metro .settings .seg-item { flex: 1; height: 44px; border-radius: 0; font-size: 13px; border: 2px solid #fff; color: #fff; padding: 0; transition: background .2s; }
+html.metro .settings .seg-item.on { background: var(--accent); border-color: var(--accent); }
+
+html.metro .btn { border-radius: 0; font-weight: 400; font-size: 17px; text-transform: lowercase; }
+html.metro .btn.grad { background: var(--accent); }
+html.metro .btn.soft { background: none; border: 2px solid #fff; }
+html.metro .btn.soft:active { background: #fff; color: #000; }
+
+html.metro .empty-icon { border-radius: 0; background: var(--accent); color: #fff; }
+html.metro .empty-title { font-size: 28px; }
+
+/* ---------- screens ---------- */
+html.metro .collection-head { background: none; }
+html.metro .collection-art { filter: none; }
+html.metro .collection-info h2 { font-size: 32px; }
+html.metro .collection-sub.link { color: var(--accent); }
+html.metro .artist-fade { background: linear-gradient(to bottom, transparent, rgba(0,0,0,.5), #000); }
+html.metro .artist-name h1 { font-size: 48px; line-height: 1; }
+html.metro .section { font-size: 30px; }
+
+html.metro .profiles { background: none; }
+html.metro .profiles h1 { font-size: 44px; }
+html.metro .profile-grid { gap: 12px 12px; }
+html.metro .profile-avatar { width: 132px; height: 132px; border-radius: 0; box-shadow: none; font-weight: 300; font-size: 56px; }
+html.metro .profile-avatar.add { background: none; border: 2px solid #fff; color: #fff; }
+html.metro .profile-name { font-weight: 300; font-size: 20px; text-transform: lowercase; }
+html.metro .profile { gap: 6px; }
+
+/* ---------- overlays ---------- */
+/* message box: full width, pinned to the top */
+html.metro .scrim { background: rgba(0,0,0,.65); }
+html.metro .scrim.center { align-items: flex-start; padding: 0; }
+html.metro .dialog { width: 100%; max-width: none; border-radius: 0; background: var(--chrome); padding: calc(24px + var(--safe-top)) 20px 20px; }
+html.metro .dialog-title { font-size: 26px; }
+html.metro .dialog-body { color: #ddd; }
+html.metro .dialog-actions { justify-content: flex-start; gap: 10px; }
+html.metro .field { border-radius: 0; border: 0; background: #fff; color: #000; }
+html.metro .sheet { border-radius: 0; background: var(--chrome); }
+html.metro .sheet-handle { visibility: hidden; height: 0; margin: 8px auto; }
+html.metro .sheet-title { font-size: 30px; }
+html.metro .menu-item { font-size: 21px; font-weight: 300; text-transform: lowercase; padding: 12px 24px; }
+html.metro .menu-item svg { display: none; }
+html.metro .menu-item:hover { background: none; }
+html.metro .menu-item:active { color: var(--accent); }
+html.metro .pick { border-radius: 0; }
+html.metro .settings .menu-item { padding: 12px 0; }
+/* toast: accent strip across the top, like a Windows Phone notification */
+html.metro .toast { top: 0; bottom: auto; left: 0; right: 0; translate: none; border-radius: 0; background: var(--accent); box-shadow: none;
+  padding: calc(14px + var(--safe-top)) 20px 14px; white-space: normal; font-size: 15px; }
+html.metro .apk { border-radius: 0; background: var(--accent); }
+html.metro .apk.disabled { background: var(--chrome); }
+
+/* ---------- player ---------- */
+html.metro .mini { margin: 0; padding: 0 4px 0 0; border-radius: 0; background: #2b2b2b !important; box-shadow: none; gap: 12px; }
+html.metro .mini .art { width: 58px !important; height: 58px !important; }
+html.metro .mini-text { font-weight: 400; font-size: 17px; text-transform: lowercase; }
+html.metro .mini-sub { color: var(--dim); font-size: 13px; }
+html.metro .mini .pp { width: 40px; height: 40px; border: 2px solid #fff; }
+html.metro .mini .pp svg { width: 24px; height: 24px; }
+html.metro .mini-progress { top: 0; bottom: auto; left: 0; right: 0; height: 3px; border-radius: 0; background: none; }
+html.metro .mini-progress div { background: var(--accent); }
+
+html.metro .seek { color: var(--dim); }
+html.metro .seek input, html.metro .volume { height: 4px; border-radius: 0; background: linear-gradient(to right, var(--accent) var(--v), #333 var(--v)); }
+html.metro .seek input::-webkit-slider-thumb, html.metro .volume::-webkit-slider-thumb { width: 8px; height: 22px; border-radius: 0; background: #fff; }
+html.metro .seek input::-moz-range-thumb, html.metro .volume::-moz-range-thumb { width: 8px; height: 22px; border-radius: 0; background: #fff; }
+html.metro .controls.big { justify-content: center; gap: 14px; }
+html.metro .controls.big .icon-btn { width: 56px; height: 56px; border: 2px solid #fff; }
+html.metro .controls.big .icon-btn svg { width: 28px; height: 28px; }
+html.metro .controls.big .icon-btn:first-child, html.metro .controls.big .icon-btn:last-child { width: 44px; height: 44px; border-color: #777; color: #777; }
+html.metro .controls.big .icon-btn.active { border-color: var(--accent); color: var(--accent) !important; }
+html.metro .controls.big .icon-btn:first-child svg, html.metro .controls.big .icon-btn:last-child svg { width: 20px; height: 20px; }
+html.metro .pp.big { background: none; border: 2px solid #fff; color: #fff; box-shadow: none; }
+html.metro .pp.big .spinner { width: 34px !important; }
+html.metro .icon-btn:active, html.metro .pp:active { background: #fff; color: #000; }
+
+html.metro .full::before, html.metro .full-bg { display: none; }
+/* Windows Phone "now playing": huge lowercase artist name bleeding off the right edge */
+.metro-only { display: none; }
+html.metro .metro-only { display: revert; }
+html.metro .full-big { font-size: 54px; font-weight: 300; text-transform: lowercase; white-space: nowrap; overflow: hidden; margin: 10px 0 -10px; }
+html.metro .caps { font-size: 14px; font-weight: 600; letter-spacing: 1px; color: #fff; }
+html.metro .caps::before { content: 'SONORA · '; }
+html.metro .full-top-album { display: none; }
+html.metro .full-art { filter: none; }
+html.metro .full-art .art { border-radius: 0 !important; }
+html.metro .full-title { font-size: 26px; font-weight: 300; text-transform: lowercase; }
+html.metro .full-artist { font-size: 15px; color: var(--dim); text-transform: lowercase; }
+html.metro .chip { border-radius: 0; background: none; border: 2px solid #fff; font-weight: 400; text-transform: lowercase; }
+
+/* ---------- shell ---------- */
+html.metro .bottom { background: none; }
+/* application bar: round outlined buttons with lowercase labels */
+html.metro .tabs { height: 74px; background: var(--chrome); }
+html.metro .tab { font-weight: 400; text-transform: lowercase; color: var(--dim); flex: none; width: 92px; }
+html.metro .tabs { justify-content: center; }
+html.metro .tab.on { color: #fff; }
+html.metro .tab-icon { width: 44px; height: 44px; border: 2px solid #fff; border-radius: 50%; }
+html.metro .tab-icon svg { width: 22px; height: 22px; }
+html.metro .tab-pill { border-radius: 50%; background: #fff; }
+html.metro .tab.on .tab-icon svg { color: #000; }
+
+html.metro .shell.wide { gap: 0; padding: 0; }
+html.metro .shell.wide .main { background: #000; border-radius: 0; }
+html.metro .side { background: var(--chrome); border-radius: 0; }
+html.metro .logo { font-weight: 300; text-transform: lowercase; font-size: 30px; }
+html.metro .logo img { display: none; }
+html.metro .side-item { border-radius: 0; font-weight: 300; font-size: 20px; text-transform: lowercase; }
+html.metro .side-pill { border-radius: 0; background: var(--accent); }
+html.metro .side-pl, html.metro .side-me { border-radius: 0; }
+html.metro .me-avatar { border-radius: 0; }
+html.metro .bar { background: var(--chrome); }
+html.metro .bar-center .pp { background: none; border: 2px solid #fff; color: #fff; }
+html.metro .bar-center .pp .spinner { width: 26px !important; }

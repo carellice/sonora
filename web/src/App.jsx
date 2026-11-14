@@ -47,6 +47,14 @@ function Screen({ route, onSettings }) {
   }
 }
 
+const SLIDE = { initial: { opacity: 0, x: 24 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0 }, transition: { duration: 0.22 } }
+// Modern UI: pages swing in like a turnstile, hinged on the left edge
+const TURNSTILE = {
+  initial: { opacity: 0, rotateY: -75, transformPerspective: 1200, originX: 0 },
+  animate: { opacity: 1, rotateY: 0, transition: { duration: 0.38, ease: [0.1, 0.9, 0.2, 1] } },
+  exit: { opacity: 0, rotateY: 60, transformPerspective: 1200, originX: 0, transition: { duration: 0.15, ease: 'easeIn' } },
+}
+
 function Shell() {
   const wide = useWide()
   const { stack } = useStore(navStore)
@@ -59,7 +67,7 @@ function Shell() {
       <main className="main">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div key={`${stack.length}-${route.name}-${route.id || ''}`} className="page"
-            initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+            {...(document.documentElement.classList.contains('metro') ? TURNSTILE : SLIDE)}>
             <Screen route={route} onSettings={() => setSettings(true)} />
           </motion.div>
         </AnimatePresence>
@@ -188,20 +196,23 @@ function AddToPlaylist() {
   )
 }
 
+const SKINS = ['classic', 'skeu', 'metro'] // the class on <html>; "classic" has no rules
+
 function Settings({ open, onClose }) {
   const [info, setInfo] = useState(null)
-  const [skeu, setSkeu] = useState(() => document.documentElement.classList.contains('skeu'))
+  const [skin, setSkin] = useState(() => localStorage.getItem('sonora.skin') || 'classic')
   useEffect(() => { if (open) api.info().then(setInfo).catch(() => {}) }, [open])
   const pickSkin = (i) => {
-    setSkeu(i === 1)
-    localStorage.setItem('sonora.skin', i === 1 ? 'skeu' : 'classic')
-    document.documentElement.classList.toggle('skeu', i === 1)
+    const s = SKINS[i]
+    setSkin(s)
+    localStorage.setItem('sonora.skin', s)
+    for (const k of SKINS) document.documentElement.classList.toggle(k, k === s)
   }
   return (
     <Dialog open={open} onClose={onClose} title="Impostazioni" actions={<button className="text-btn dim" onClick={onClose}>Chiudi</button>}>
       <div className="settings">
         <b>Stile grafica</b>
-        <SegmentedTabs id="skin" tabs={['Moderno', 'Skeuomorfismo']} selected={skeu ? 1 : 0} onSelect={pickSkin} />
+        <SegmentedTabs id="skin" tabs={['Moderno', 'Skeuomorfismo', 'Modern UI']} selected={Math.max(0, SKINS.indexOf(skin))} onSelect={pickSkin} />
         <div style={{ height: 8 }} />
         <a className={`apk ${info?.apk ? '' : 'disabled'}`} href={info?.apk ? '/sonora.apk' : undefined} download>
           <Icon name="android" size={32} />
