@@ -124,10 +124,11 @@ fun MiniPlayer(onOpen: () -> Unit) {
     if (Skin.skeu) return SkeuMiniPlayer(t, pos, dur, src, onOpen)
     if (Skin.metro) return MetroMiniPlayer(t, pos, dur, src, onOpen)
     if (Skin.nothing) return NdMiniPlayer(t, pos, dur, src, onOpen)
+    val df = Skin.dueffe
     Box(
-        Modifier.padding(horizontal = 8.dp, vertical = 6.dp).fillMaxWidth().pressScale(src)
-            .shadow(16.dp, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp))
-            .background(Brush.horizontalGradient(listOf(tint, Color(0xFF1A1824))))
+        Modifier.padding(horizontal = if (df) 20.dp else 8.dp, vertical = 6.dp).fillMaxWidth().pressScale(src)
+            .then(if (df) Modifier.dfCard(RoundedCornerShape(22.dp)) else Modifier.shadow(16.dp, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)))
+            .background(Brush.horizontalGradient(if (df) listOf(tint.copy(alpha = .45f), Color.Transparent) else listOf(tint, Color(0xFF1A1824))))
             .clickable(interactionSource = src, indication = ripple(), onClick = onOpen)
             .pointerInput(Unit) { detectVerticalDragGestures { _, dy -> if (dy < -12) onOpen() } },
     ) {
@@ -138,16 +139,16 @@ fun MiniPlayer(onOpen: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Marquee(t.title, size = 14, weight = FontWeight.SemiBold)
-                Text(t.artist, color = Color.White.copy(alpha = .7f), fontSize = 12.sp, maxLines = 1)
+                Text(t.artist, color = Ink.copy(alpha = .7f), fontSize = 12.sp, maxLines = 1)
             }
             PlayPauseIcon(Modifier.size(44.dp), small = true)
-            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Color.White) }
+            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Ink) }
         }
         Box(
-            Modifier.align(Alignment.BottomStart).padding(horizontal = 14.dp).fillMaxWidth().height(2.dp)
-                .clip(RoundedCornerShape(1.dp)).background(Color.White.copy(alpha = .15f)),
+            Modifier.align(Alignment.BottomStart).padding(horizontal = if (df) 22.dp else 14.dp).padding(bottom = if (df) 5.dp else 0.dp).fillMaxWidth().height(2.dp)
+                .clip(RoundedCornerShape(1.dp)).background(if (df) DfSurfaceHigher else Ink.copy(alpha = .15f)),
         ) {
-            Box(Modifier.fillMaxWidth(if (dur > 0) (pos.toFloat() / dur).coerceIn(0f, 1f) else 0f).height(2.dp).background(Color.White))
+            Box(Modifier.fillMaxWidth(if (dur > 0) (pos.toFloat() / dur).coerceIn(0f, 1f) else 0f).height(2.dp).clip(RoundedCornerShape(1.dp)).background(if (df) DfPrimary else Ink))
         }
     }
 }
@@ -201,7 +202,7 @@ private fun MetroMiniPlayer(t: Track, pos: Long, dur: Long, src: MutableInteract
                 Text(t.artist.lowercase(), color = MetroSubtle, fontSize = 13.sp, maxLines = 1)
             }
             PlayPauseIcon(Modifier.size(40.dp).ring(), small = true)
-            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Color.White) }
+            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Ink) }
         }
     }
 }
@@ -226,7 +227,7 @@ private fun NdMiniPlayer(t: Track, pos: Long, dur: Long, src: MutableInteraction
                 NdLabel(t.artist, Modifier.padding(top = 2.dp), size = 10.sp)
             }
             PlayPauseIcon(Modifier.size(40.dp), small = true)
-            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Color.White) }
+            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Ink) }
         }
         SegmentedBar(if (dur > 0) pos.toFloat() / dur else 0f, Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp), height = 3.dp)
     }
@@ -237,14 +238,15 @@ fun PlayPauseIcon(modifier: Modifier, small: Boolean) {
     val playing = Playback.isPlaying
     val skeu = Skin.skeu
     // skeuomorphism: dark icon on the metal faceplate (small), amber-lit knob in a metal ring (big)
-    val fg = when { skeu && small -> MetalText; skeu -> Amber; Skin.nothing -> Color.Black; small || Skin.metro -> Color.White; else -> Bg }
+    val fg = when { skeu && small -> MetalText; skeu -> Amber; Skin.nothing -> Color.Black; small || Skin.metro -> Ink; Skin.dueffe -> DfOnPrimary; else -> Bg }
     Box(
         modifier.then(
             when {
                 skeu && !small -> Modifier.clip(CircleShape).background(Brush.verticalGradient(listOf(Color(0xFFE0E2E5), Color(0xFF6A6C70)))).padding(4.dp)
                     .clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF4A443E), Color(0xFF1A1714))))
                 Skin.metro && !small -> Modifier.ring()
-                else -> Modifier.clip(CircleShape).background(if (small && !Skin.nothing) Color.Transparent else Color.White)
+                Skin.dueffe && !small -> Modifier.clip(CircleShape).background(DfGold)
+                else -> Modifier.clip(CircleShape).background(if (small && !Skin.nothing) Color.Transparent else Ink)
             },
         ).clickable { Playback.toggle() },
         contentAlignment = Alignment.Center,
@@ -290,7 +292,7 @@ fun FullPlayer(onClose: () -> Unit) {
     val nd = Skin.nothing
     val artScale by animateFloatAsState(if (Playback.isPlaying || skeu || metro || nd) 1f else .86f, spring(dampingRatio = .55f, stiffness = 260f), label = "art")
     val vinylOut by animateFloatAsState(if (Playback.isPlaying) 1f else 0f, spring(dampingRatio = .6f, stiffness = 120f), label = "vinyl")
-    val lightText = if (skeu) Color(0xFFCFC3B3) else Color.White.copy(alpha = .7f)
+    val lightText = if (skeu) Color(0xFFCFC3B3) else Ink.copy(alpha = .7f)
 
     Box(
         Modifier.fillMaxSize()
@@ -300,6 +302,7 @@ fun FullPlayer(onClose: () -> Unit) {
                 if (skeu) Modifier.leather().background(Brush.verticalGradient(0f to tint.copy(alpha = .35f), .6f to Color.Transparent))
                 else if (metro) Modifier
                 else if (nd) Modifier.dotGrid(Color(0xFF161616))
+                else if (Skin.dueffe) Modifier
                 else Modifier.background(Brush.verticalGradient(listOf(tint, tint.copy(alpha = .55f), Bg))),
             )
             .pointerInput(Unit) {
@@ -310,17 +313,18 @@ fun FullPlayer(onClose: () -> Unit) {
             }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
     ) {
+        if (Skin.dueffe) DfHeroBackdrop(t.thumb, tint)
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose) { Icon(Icons.Rounded.KeyboardArrowDown, "Chiudi", tint = Color.White, modifier = Modifier.size(32.dp)) }
+                IconButton(onClick = onClose) { Icon(Icons.Rounded.KeyboardArrowDown, "Chiudi", tint = Ink, modifier = Modifier.size(32.dp)) }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (skeu) Text("IN RIPRODUZIONE", fontSize = 11.sp, letterSpacing = 1.5.sp, color = Amber, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, style = glow())
                     else if (metro) MetroTitle("Sonora · In riproduzione")
                     else if (nd) NdLabel("In riproduzione", size = 11.sp)
-                    else Text("IN RIPRODUZIONE", fontSize = 11.sp, letterSpacing = 1.5.sp, color = Color.White.copy(alpha = .7f))
+                    else Text("IN RIPRODUZIONE", fontSize = 11.sp, letterSpacing = 1.5.sp, color = Ink.copy(alpha = .7f))
                     if (!metro) Text(t.album ?: t.artist, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
-                IconButton(onClick = { Ui.menu = MenuReq(t) }) { Icon(Icons.Rounded.MoreVert, "Opzioni", tint = Color.White) }
+                IconButton(onClick = { Ui.menu = MenuReq(t) }) { Icon(Icons.Rounded.MoreVert, "Opzioni", tint = Ink) }
             }
             Spacer(Modifier.weight(1f))
             AnimatedContent(
@@ -380,7 +384,7 @@ fun FullPlayer(onClose: () -> Unit) {
                     } else {
                         Marquee(t.title, size = 22, weight = FontWeight.ExtraBold)
                         Spacer(Modifier.height(2.dp))
-                        Marquee(t.artist, size = 16, color = Color.White.copy(alpha = .7f))
+                        Marquee(t.artist, size = 16, color = Ink.copy(alpha = .7f))
                     }
                 }
                 val saved = Lib.hasSong(t.id)
@@ -388,7 +392,7 @@ fun FullPlayer(onClose: () -> Unit) {
                 IconButton(onClick = { Lib.scope.launch { Lib.toggleSong(t) } }) {
                     Icon(
                         if (saved) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Libreria",
-                        tint = if (saved) (if (nd) NdRed else Accent) else Color.White, modifier = Modifier.size(28.dp).graphicsLayer { scaleX = hs; scaleY = hs },
+                        tint = if (saved) (if (nd) NdRed else Accent) else Ink, modifier = Modifier.size(28.dp).graphicsLayer { scaleX = hs; scaleY = hs },
                     )
                 }
             }
@@ -411,8 +415,9 @@ fun FullPlayer(onClose: () -> Unit) {
                 onValueChange = { dragging = true; dragValue = it },
                 onValueChangeFinished = { Playback.seek((dragValue * dur).toLong()); dragging = false },
                 colors = if (skeu) SliderDefaults.colors(thumbColor = Color(0xFFE6E8EB), activeTrackColor = Amber, inactiveTrackColor = Color.Black.copy(alpha = .6f))
-                else if (metro) SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = MetroAccent, inactiveTrackColor = Color(0xFF333333))
-                else SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = .2f)),
+                else if (metro) SliderDefaults.colors(thumbColor = Ink, activeTrackColor = MetroAccent, inactiveTrackColor = Color(0xFF333333))
+                else if (Skin.dueffe) SliderDefaults.colors(thumbColor = DfPrimary, activeTrackColor = DfPrimary, inactiveTrackColor = DfSurfaceHigher)
+                else SliderDefaults.colors(thumbColor = Ink, activeTrackColor = Ink, inactiveTrackColor = Ink.copy(alpha = .2f)),
             )
             if (!nd) Row(Modifier.fillMaxWidth()) {
                 val ff = if (skeu) FontFamily.Monospace else null
@@ -423,15 +428,15 @@ fun FullPlayer(onClose: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             // skeuomorphism: chrome buttons on a brushed-metal console, toggles lit amber when on
             val on = if (skeu) Color(0xFFE08400) else if (nd) NdRed else Accent
-            val off = if (skeu) MetalText else if (metro) Color(0xFF777777) else Color.White.copy(alpha = .75f)
-            val main = if (skeu) MetalText else Color.White
+            val off = if (skeu) MetalText else if (metro) Color(0xFF777777) else Ink.copy(alpha = .75f)
+            val main = if (skeu) MetalText else Ink
             Row(
                 Modifier.fillMaxWidth().then(if (skeu) Modifier.metal(RoundedCornerShape(18.dp), 14.dp).padding(horizontal = 12.dp, vertical = 12.dp) else Modifier),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
             ) {
                 Transport(Icons.Rounded.Shuffle, "Casuale", 48, 24, if (Playback.shuffle) on else off) { Playback.toggleShuffle() }
                 Transport(Icons.Rounded.SkipPrevious, "Precedente", 60, 42, main) { Playback.previous() }
-                PlayPauseIcon(Modifier.size(if (skeu) 84.dp else 76.dp).then(if (metro || nd) Modifier else Modifier.shadow(20.dp, CircleShape)), small = false)
+                PlayPauseIcon(Modifier.size(if (skeu) 84.dp else 76.dp).then(if (metro || nd || Skin.dueffe) Modifier else Modifier.shadow(20.dp, CircleShape)), small = false)
                 Transport(Icons.Rounded.SkipNext, "Successivo", 60, 42, main) { Playback.next() }
                 Transport(
                     if (Playback.repeat == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Ripeti", 48, 24,
@@ -442,9 +447,10 @@ fun FullPlayer(onClose: () -> Unit) {
             Row(
                 Modifier.align(Alignment.CenterHorizontally)
                     .then(
-                        if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 4.dp) else if (metro) Modifier.border(2.dp, Color.White)
+                        if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 4.dp) else if (metro) Modifier.border(2.dp, Ink)
                         else if (nd) Modifier.ndOutline().clip(CircleShape)
-                        else Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = .08f)),
+                        else if (Skin.dueffe) Modifier.clip(CircleShape).background(DfSurface).border(1.dp, DfLineStrong, CircleShape)
+                        else Modifier.clip(RoundedCornerShape(20.dp)).background(Ink.copy(alpha = .08f)),
                     )
                     .clickable { showQueue = true }.padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -452,7 +458,7 @@ fun FullPlayer(onClose: () -> Unit) {
                 Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, tint = main, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 if (nd) NdLabel("Prossimi brani", color = NdPrimary)
-                else Text("Prossimi brani".mt(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = main, style = if (skeu) OnMetal else androidx.compose.ui.text.TextStyle.Default)
+                else Text("Prossimi brani".mt(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = main, style = if (skeu) OnMetal else BaseText)
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -463,7 +469,7 @@ fun FullPlayer(onClose: () -> Unit) {
         if (Skin.nothing) NdLabel("Prossimi brani", Modifier.padding(start = 24.dp, bottom = 12.dp))
         else Text(
             "Prossimi brani".mt(), fontSize = if (Skin.metro) 30.sp else 20.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.Bold,
-            modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = 20.dp, bottom = 8.dp), style = if (Skin.dueffe) DfTitle else BaseText,
         )
         if (q.isEmpty()) Text("La coda è vuota", color = Dim, modifier = Modifier.padding(20.dp))
         LazyColumn(Modifier.fillMaxWidth()) {

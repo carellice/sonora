@@ -85,29 +85,34 @@ fun Modifier.listRow(): Modifier =
     if (Skin.skeu) padding(horizontal = 12.dp).drawBehind {
         val y = size.height - 1f
         drawLine(Color.Black.copy(alpha = .55f), Offset(0f, y - 1f), Offset(size.width, y - 1f), 2f)
-        drawLine(Color.White.copy(alpha = .05f), Offset(0f, y + 1f), Offset(size.width, y + 1f), 1f)
+        drawLine(Ink.copy(alpha = .05f), Offset(0f, y + 1f), Offset(size.width, y + 1f), 1f)
     }
     else if (Skin.metro) padding(horizontal = 12.dp)
     else if (Skin.nothing) padding(horizontal = 16.dp).ndDivider()
-    else padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp))
+    else padding(horizontal = 8.dp).clip(RoundedCornerShape(if (Skin.dueffe) 18.dp else 14.dp))
 
 /** Round icon-button background: a domed knob in skeuomorphism, a faint disc otherwise. */
 fun Modifier.roundButton(): Modifier = if (Skin.skeu) knob() else if (Skin.metro) ring()
     else if (Skin.nothing) clip(CircleShape).background(NdSurface).border(1.dp, NdBorderVisible, CircleShape)
-    else clip(CircleShape).background(Color.White.copy(alpha = .08f))
+    else if (Skin.dueffe) clip(CircleShape).background(DfSurface).border(1.dp, DfLine, CircleShape)
+    else clip(CircleShape).background(Ink.copy(alpha = .08f))
 
 /** Light text with a letterpress shadow on leather (skeuomorphism only). */
-fun skeuText(): TextStyle = if (Skin.skeu) Engraved else BaseText
+fun skeuText(): TextStyle = if (Skin.skeu) Engraved else if (Skin.dueffe) DfTitle else BaseText
 
 // getters: they follow the style chosen in Impostazioni (Skin.style is Compose state, so screens recompose)
-val Bg: Color get() = if (Skin.skeu) Color(0xFF1D1A17) else if (Skin.metro || Skin.nothing) Color.Black else Color(0xFF0B0B10)
-val Card: Color get() = if (Skin.skeu) Color(0xFF2C2824) else if (Skin.metro) MetroChrome else if (Skin.nothing) NdSurface else Color(0xFF17161F)
-val CardHi: Color get() = if (Skin.skeu) Color(0xFF36312C) else if (Skin.metro) MetroChrome else if (Skin.nothing) NdSurface else Color(0xFF221F2E)
+val Bg: Color get() = if (Skin.skeu) Color(0xFF1D1A17) else if (Skin.metro || Skin.nothing) Color.Black else if (Skin.dueffe) DfBg else Color(0xFF0B0B10)
+val Card: Color get() = if (Skin.skeu) Color(0xFF2C2824) else if (Skin.metro) MetroChrome else if (Skin.nothing) NdSurface else if (Skin.dueffe) DfSurface else Color(0xFF17161F)
+val CardHi: Color get() = if (Skin.skeu) Color(0xFF36312C) else if (Skin.metro) MetroChrome else if (Skin.nothing) NdSurface else if (Skin.dueffe) DfSurfaceHigh else Color(0xFF221F2E)
+/** Main text colour: ivory in Dueffe, white elsewhere. */
+val Ink: Color get() = if (Skin.dueffe) DfText else Color.White
 // Nothing: white is the "accent"; red is used on purpose only (playing now, saved, toggles on)
-val Accent: Color get() = if (Skin.skeu) Amber else if (Skin.metro) MetroAccent else if (Skin.nothing) Color.White else Color(0xFFFF4D6D)
-val Accent2: Color get() = if (Skin.skeu) Color(0xFFFF7A1A) else if (Skin.metro) MetroAccent else if (Skin.nothing) NdSecondary else Color(0xFF8B5CF6)
-val Dim: Color get() = if (Skin.skeu) Color(0xFFA89F94) else if (Skin.metro) MetroSubtle else if (Skin.nothing) NdSecondary else Color(0xFF9C99B0)
-val AccentBrush: Brush get() = if (Skin.skeu) AmberGloss else if (Skin.metro) SolidColor(MetroAccent) else if (Skin.nothing) SolidColor(NdRaised)
+val Accent: Color get() = if (Skin.skeu) Amber else if (Skin.metro) MetroAccent else if (Skin.nothing) Color.White else if (Skin.dueffe) DfPrimary else Color(0xFFFF4D6D)
+val Accent2: Color get() = if (Skin.skeu) Color(0xFFFF7A1A) else if (Skin.metro) MetroAccent else if (Skin.nothing) NdSecondary else if (Skin.dueffe) DfPrimaryStrong else Color(0xFF8B5CF6)
+val Dim: Color get() = if (Skin.skeu) Color(0xFFA89F94) else if (Skin.metro) MetroSubtle else if (Skin.nothing) NdSecondary else if (Skin.dueffe) DfMuted else Color(0xFF9C99B0)
+/** Text and icons drawn on top of AccentBrush. */
+val OnAccent: Color get() = if (Skin.dueffe) DfOnPrimary else Color.White
+val AccentBrush: Brush get() = if (Skin.skeu) AmberGloss else if (Skin.metro) SolidColor(MetroAccent) else if (Skin.nothing) SolidColor(NdRaised) else if (Skin.dueffe) DfGold
     else Brush.linearGradient(listOf(Accent, Accent2))
 private val Paper = Color(0xFFF4ECE2)
 private val Cocoa = Color(0xFF4A2A00)
@@ -120,6 +125,11 @@ private val SquareShapes = androidx.compose.material3.Shapes(
 private val MetroType = androidx.compose.material3.Typography().let {
     it.copy(headlineSmall = it.headlineSmall.copy(fontWeight = FontWeight.Light, fontSize = 26.sp))
 }
+// Dueffe: fields 16, buttons 18, sheets and dialogs 26
+private val DfShapes = androidx.compose.material3.Shapes(
+    extraSmall = RoundedCornerShape(14.dp), small = RoundedCornerShape(16.dp), medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(26.dp), extraLarge = RoundedCornerShape(26.dp),
+)
 // Nothing: dialogs and sheets up to 16dp, everything in Space Grotesk
 private val NdShapes = androidx.compose.material3.Shapes(
     extraSmall = RoundedCornerShape(4.dp), small = RoundedCornerShape(8.dp), medium = RoundedCornerShape(12.dp),
@@ -136,15 +146,15 @@ private val NdType = androidx.compose.material3.Typography().run {
 
 @Composable
 fun SonoraTheme(content: @Composable () -> Unit) = MaterialTheme(
-    shapes = if (Skin.metro) SquareShapes else if (Skin.nothing) NdShapes else androidx.compose.material3.Shapes(),
-    typography = if (Skin.metro) MetroType else if (Skin.nothing) NdType else androidx.compose.material3.Typography(),
+    shapes = if (Skin.metro) SquareShapes else if (Skin.nothing) NdShapes else if (Skin.dueffe) DfShapes else androidx.compose.material3.Shapes(),
+    typography = if (Skin.metro) MetroType else if (Skin.nothing) NdType else if (Skin.dueffe) DfType else androidx.compose.material3.Typography(),
     colorScheme = darkColorScheme(
         primary = Accent, secondary = Accent2, background = Bg, surface = Bg,
         surfaceVariant = Card, surfaceContainer = Card, surfaceContainerHigh = CardHi, surfaceContainerLow = Card,
-        onBackground = Color.White, onSurface = Color.White, onSurfaceVariant = Dim, onPrimary = Color.White,
-        secondaryContainer = CardHi, onSecondaryContainer = Color.White,
+        onBackground = Ink, onSurface = Ink, onSurfaceVariant = Dim, onPrimary = OnAccent,
+        secondaryContainer = CardHi, onSecondaryContainer = Ink,
     ),
-    content = { androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides Color.White, content = content) },
+    content = { androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides Ink, content = content) },
 )
 
 fun fmt(sec: Int): String = if (sec <= 0) "" else "%d:%02d".format(sec / 60, sec % 60)
@@ -187,7 +197,11 @@ fun rememberArtColor(url: String?, fallback: Color = CardHi): Color {
 @Composable
 fun Modifier.pressScale(source: MutableInteractionSource): Modifier {
     val pressed by source.collectIsPressedAsState()
-    val s by animateFloatAsState(if (pressed) .96f else 1f, spring(stiffness = 600f), label = "press")
+    // Dueffe: compresses fast, springs back with a bounce
+    val s by animateFloatAsState(
+        if (pressed) (if (Skin.dueffe) .95f else .96f) else 1f,
+        if (Skin.dueffe) spring(dampingRatio = if (pressed) 1f else .42f, stiffness = if (pressed) 900f else 380f) else spring(stiffness = 600f), label = "press",
+    )
     return scale(s)
 }
 
@@ -233,7 +247,7 @@ fun TrackRow(
         } else Box(contentAlignment = Alignment.Center) {
             Artwork(t.thumb, Modifier.size(50.dp))
             if (isCurrent) Box(Modifier.size(50.dp).clip(corner(10.dp)).background(Color.Black.copy(alpha = .45f)), contentAlignment = Alignment.Center) {
-                EqualizerBars(Playback.isPlaying, color = Color.White)
+                EqualizerBars(Playback.isPlaying, color = Ink)
             }
         }
         Spacer(Modifier.width(12.dp))
@@ -243,7 +257,7 @@ fun TrackRow(
                 Text(
                     t.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     fontWeight = if (Skin.metro || Skin.nothing) FontWeight.Normal else FontWeight.SemiBold, fontSize = if (Skin.metro) 18.sp else 15.sp,
-                    color = if (isCurrent) Accent else if (Skin.skeu) Paper else Color.White,
+                    color = if (isCurrent) Accent else if (Skin.skeu) Paper else Ink,
                     style = if (!Skin.skeu) BaseText else if (isCurrent) glow() else Engraved,
                 )
             }
@@ -306,7 +320,7 @@ fun ArtistRow(a: Artist, onClick: () -> Unit) {
         ) {
             Text(
                 a.name.take(1).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (Skin.nothing) 28.sp else 22.sp,
-                color = if (Skin.skeu) Cocoa else Color.White, style = if (Skin.skeu) OnMetal else BaseText,
+                color = if (Skin.skeu) Cocoa else OnAccent, style = if (Skin.skeu) OnMetal else BaseText,
                 fontFamily = if (Skin.nothing) NdDot else null,
             )
         }
@@ -325,13 +339,14 @@ fun ArtistRow(a: Artist, onClick: () -> Unit) {
 fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, big: Boolean = false) {
     val metro = Skin.metro
     val focusBg by animateColorAsState(
-        if (metro) (if (value.isEmpty()) Color(0xFFCCCCCC) else Color.White) else if (value.isEmpty()) Card else CardHi, label = "sf",
+        if (metro) (if (value.isEmpty()) Color(0xFFCCCCCC) else Ink) else if (value.isEmpty()) Card else CardHi, label = "sf",
     )
     val ink = if (metro) Color(0xFF555555) else Dim
     Row(
         modifier.fillMaxWidth().height(if (big) 52.dp else 44.dp).then(
             if (Skin.skeu) Modifier.inset(RoundedCornerShape(if (big) 26.dp else 22.dp))
             else if (Skin.nothing) Modifier.ndOutline(if (value.isEmpty()) NdBorderVisible else NdPrimary)
+            else if (Skin.dueffe) Modifier.clip(RoundedCornerShape(16.dp)).background(DfBg).border(1.dp, if (value.isEmpty()) DfLineStrong else DfPrimary, RoundedCornerShape(16.dp))
             else Modifier.clip(corner(if (big) 26.dp else 22.dp)).background(focusBg),
         ).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -343,7 +358,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
             BasicTextField(
                 value, onChange, singleLine = true, cursorBrush = SolidColor(Accent),
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    color = if (metro) Color.Black else Color.White, fontSize = if (big) 16.sp else 14.sp, fontFamily = if (Skin.nothing) NdMono else null,
+                    color = if (metro) Color.Black else Ink, fontSize = if (big) 16.sp else 14.sp, fontFamily = if (Skin.nothing) NdMono else null,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -360,18 +375,18 @@ fun GradientButton(text: String, icon: ImageVector, modifier: Modifier = Modifie
     val src = remember { MutableInteractionSource() }
     Row(
         modifier.pressScale(src).height(48.dp).then(
-            if (Skin.skeu) Modifier.glossAmber(RoundedCornerShape(12.dp)) else if (Skin.nothing) Modifier.clip(CircleShape).background(Color.White)
-            else Modifier.clip(corner(24.dp)).background(AccentBrush),
+            if (Skin.skeu) Modifier.glossAmber(RoundedCornerShape(12.dp)) else if (Skin.nothing) Modifier.clip(CircleShape).background(Ink)
+            else Modifier.clip(corner(if (Skin.dueffe) 18.dp else 24.dp)).background(AccentBrush),
         )
             .clickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .padding(horizontal = 22.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
     ) {
-        val fg = if (Skin.skeu) Cocoa else if (Skin.nothing) Color.Black else Color.White
+        val fg = if (Skin.skeu) Cocoa else if (Skin.nothing) Color.Black else OnAccent
         Icon(icon, null, tint = fg)
         Spacer(Modifier.width(8.dp))
         if (Skin.nothing) NdLabel(text, color = fg, size = 13.sp)
-        else Text(text.mt(), fontWeight = if (Skin.metro) FontWeight.Normal else FontWeight.Bold, fontSize = if (Skin.metro) 17.sp else 14.sp, color = fg, style = if (Skin.skeu) OnMetal else TextStyle.Default)
+        else Text(text.mt(), fontWeight = if (Skin.metro) FontWeight.Normal else FontWeight.Bold, fontSize = if (Skin.metro) 17.sp else 14.sp, color = fg, style = if (Skin.skeu) OnMetal else BaseText)
     }
 }
 
@@ -380,19 +395,20 @@ fun SoftButton(text: String, icon: ImageVector, modifier: Modifier = Modifier, o
     val src = remember { MutableInteractionSource() }
     Row(
         modifier.pressScale(src).height(48.dp).then(
-            if (Skin.skeu) Modifier.metal(RoundedCornerShape(12.dp)) else if (Skin.metro) Modifier.border(2.dp, Color.White)
+            if (Skin.skeu) Modifier.metal(RoundedCornerShape(12.dp)) else if (Skin.metro) Modifier.border(2.dp, Ink)
             else if (Skin.nothing) Modifier.ndOutline().clip(CircleShape)
+            else if (Skin.dueffe) Modifier.clip(RoundedCornerShape(18.dp)).background(DfSurface).border(1.dp, DfLineStrong, RoundedCornerShape(18.dp))
             else Modifier.clip(RoundedCornerShape(24.dp)).background(CardHi),
         )
             .clickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .padding(horizontal = 22.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
     ) {
-        val fg = if (Skin.skeu) MetalText else if (Skin.nothing) NdPrimary else Color.White
+        val fg = if (Skin.skeu) MetalText else if (Skin.nothing) NdPrimary else Ink
         Icon(icon, null, tint = fg)
         Spacer(Modifier.width(8.dp))
         if (Skin.nothing) NdLabel(text, color = fg, size = 13.sp)
-        else Text(text.mt(), fontWeight = if (Skin.metro) FontWeight.Normal else FontWeight.SemiBold, fontSize = if (Skin.metro) 17.sp else 14.sp, color = fg, style = if (Skin.skeu) OnMetal else TextStyle.Default)
+        else Text(text.mt(), fontWeight = if (Skin.metro) FontWeight.Normal else FontWeight.SemiBold, fontSize = if (Skin.metro) 17.sp else 14.sp, color = fg, style = if (Skin.skeu) OnMetal else BaseText)
     }
 }
 
@@ -401,10 +417,10 @@ fun EmptyState(icon: ImageVector, title: String, text: String) {
     if (Skin.nothing) return NdEmptyState(icon, title, text)
     Column(Modifier.fillMaxWidth().padding(top = 70.dp, start = 32.dp, end = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            Modifier.size(84.dp).then(if (Skin.skeu) Modifier.knob() else if (Skin.metro) Modifier.background(MetroAccent) else Modifier.clip(CircleShape).background(Card)),
+            Modifier.size(84.dp).then(if (Skin.skeu) Modifier.knob() else if (Skin.metro) Modifier.background(MetroAccent) else if (Skin.dueffe) Modifier.dfCard(CircleShape) else Modifier.clip(CircleShape).background(Card)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, null, tint = if (Skin.metro) Color.White else Accent, modifier = Modifier.size(if (Skin.metro) 44.dp else 38.dp))
+            Icon(icon, null, tint = if (Skin.metro) Ink else Accent, modifier = Modifier.size(if (Skin.metro) 44.dp else 38.dp))
         }
         Spacer(Modifier.height(18.dp))
         if (Skin.metro) Text(title.lowercase(), fontWeight = FontWeight.Light, fontSize = 28.sp)
@@ -431,7 +447,7 @@ private fun NdEmptyState(icon: ImageVector, title: String, text: String) {
 
 @Composable
 fun Marquee(
-    text: String, modifier: Modifier = Modifier, size: Int = 15, weight: FontWeight = FontWeight.Normal, color: Color = Color.White,
+    text: String, modifier: Modifier = Modifier, size: Int = 15, weight: FontWeight = FontWeight.Normal, color: Color = Ink,
     style: TextStyle = BaseText, mono: Boolean = false,
 ) = Text(
     text, modifier.basicMarquee(iterations = Int.MAX_VALUE), maxLines = 1, fontSize = size.sp, fontWeight = weight, color = color,

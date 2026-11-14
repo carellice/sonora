@@ -63,7 +63,7 @@ val NdMono = FontFamily(Font(R.font.space_mono, FontWeight.Normal), Font(R.font.
 val NdDot = FontFamily(Font(R.font.doto, FontWeight.Bold, variationSettings = FontVariation.Settings(FontVariation.weight(700))))
 
 /** Base text style of the current skin: Space Grotesk in Nothing, the platform font otherwise. */
-val BaseText: TextStyle get() = if (Skin.nothing) TextStyle(fontFamily = NdSans) else TextStyle.Default
+val BaseText: TextStyle get() = if (Skin.nothing) TextStyle(fontFamily = NdSans) else if (Skin.dueffe) TextStyle(fontFamily = DfBody) else TextStyle.Default
 
 /** Instrument-panel label: Space Mono, ALL CAPS, wide tracking. */
 @Composable

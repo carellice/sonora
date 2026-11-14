@@ -1,0 +1,171 @@
+/* Dueffe skin: active when <html> has the class "dueffe" (Impostazioni → Stile grafica).
+   Dueffe design system: near-black ground, warm surfaces, ivory text, one gold accent; Bricolage Grotesque titles,
+   Inter text; 1px gold lines instead of shadows; spring press; aurora of drifting gold nebulae behind everything. */
+@font-face { font-family: 'Bricolage Grotesque'; src: url('./fonts/Bricolage.ttf') format('truetype'); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('./fonts/Inter.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+html.dueffe {
+  --bg: #050505;
+  --bg-elevated: #0b0a08;
+  --card: #11100d;
+  --card-hi: #1a1711;
+  --surface-higher: #242016;
+  --text: #fffaf0;
+  --dim: #b8aa8d;
+  --line: #ffdc8029;
+  --line-strong: #ffd84d57;
+  --accent: #ffd84d;
+  --accent2: #ffb800;
+  --secondary: #fff0ad;
+  --on-primary: #161006;
+  --error: #ff9b85;
+  --nav: #080705e6;
+  --grad: linear-gradient(135deg, #ffd84d, #ffc826);
+  --card-grad: linear-gradient(to bottom, var(--card-hi), var(--card));
+  --ease-reveal: cubic-bezier(.22, .78, .16, 1);
+  --ease-letter: cubic-bezier(.16, .86, .24, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --display: 'Bricolage Grotesque', Inter, system-ui, sans-serif;
+}
+html.dueffe body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--text); }
+
+/* aurora: three gold and amber nebulae drifting slowly behind the app */
+html.dueffe body::before {
+  content: ''; position: fixed; inset: -10%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 6%, #ffb80038, transparent 45%),
+    radial-gradient(circle at 95% 40%, #ffd84d24, transparent 38%),
+    radial-gradient(circle at 35% 95%, #8a5a001f, transparent 50%),
+    var(--bg);
+  animation: df-aurora 32s ease-in-out infinite alternate;
+}
+@keyframes df-aurora { to { transform: translate(4%, 3%) scale(1.06); } }
+html.dueffe body { background: var(--bg); }
+html.dueffe #root { position: relative; z-index: 0; }
+
+/* titles in Bricolage; the page title gold with a hand-drawn underline that draws itself */
+html.dueffe .head h1, html.dueffe .profiles h1, html.dueffe .artist-name h1, html.dueffe .collection-info h2, html.dueffe .section,
+html.dueffe .card-title, html.dueffe .dialog-title, html.dueffe .sheet-title, html.dueffe .full-title, html.dueffe .empty-title,
+html.dueffe .logo, html.dueffe .profile-name, html.dueffe .new-pl + .track-text .track-title {
+  font-family: var(--display); letter-spacing: -.02em;
+}
+html.dueffe .head h1, html.dueffe .profiles h1 { /* gold title, underline drawn under the text only */
+  flex: 0 1 auto; margin-right: auto; color: var(--accent); font-size: 30px; font-weight: 700; line-height: 34px; padding-bottom: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 6 Q45 1 99 4' stroke='%23ffb800' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left bottom / 0% 8px;
+  animation: df-underline .7s .22s var(--ease-reveal) forwards;
+}
+@keyframes df-underline { to { background-size: 100% 8px; } }
+html.dueffe .section { font-size: 22px; }
+html.dueffe .collection-info h2 { font-size: 28px; }
+
+/* ---------- basics ---------- */
+html.dueffe .icon-btn { color: var(--text); }
+html.dueffe .icon-btn:hover { background: #ffd84d14; }
+html.dueffe .icon-btn.round { background: var(--card); border: 1px solid var(--line); }
+html.dueffe .back-btn { background: #11100dcc !important; border: 1px solid var(--line); }
+html.dueffe .text-btn:hover, html.dueffe .menu-item:hover, html.dueffe .pick:hover { background: #ffd84d14; }
+html.dueffe .art-ph { color: #b8aa8d99; }
+html.dueffe .spinner { border-color: var(--surface-higher); border-top-color: var(--accent); }
+html.dueffe .progress-bar { background: var(--accent); }
+
+/* spring press instead of ripple: compresses fast, bounces back */
+html.dueffe :is(.btn, .track, .card, .chip, .tab, .icon-btn, .mini, .pick, .menu-item, .profile-avatar, .side-item) {
+  transition: transform .45s var(--ease-spring), background .26s, color .26s, border-color .26s;
+}
+html.dueffe :is(.btn, .card, .icon-btn, .mini, .profile-avatar):active { transform: scale(.95); transition-duration: .08s; }
+html.dueffe :is(.track, .pick, .menu-item):active { transform: scale(.97); transition-duration: .08s; }
+html.dueffe .chip:active { transform: scale(.92); transition-duration: .08s; }
+
+/* ---------- rows and cards ---------- */
+html.dueffe .track { border-radius: 18px; }
+html.dueffe .track:hover { background: #ffd84d0d; }
+html.dueffe .track.current { background: #ffd84d24; }
+html.dueffe .new-pl { background: var(--grad); color: var(--on-primary); }
+html.dueffe .card { border-radius: 20px; }
+html.dueffe .card:hover { background: #ffd84d0d; }
+
+html.dueffe .search { background: var(--bg); border: 1px solid var(--line-strong); border-radius: 16px; }
+html.dueffe .search.filled, html.dueffe .search:focus-within { background: var(--bg); border-color: var(--accent); }
+
+html.dueffe .seg { background: var(--card); border: 1px solid var(--line); }
+html.dueffe .seg-item.on { color: var(--on-primary); }
+html.dueffe .seg-pill { background: var(--grad); }
+
+html.dueffe .btn { border-radius: 18px; font-size: 15px; font-weight: 600; }
+html.dueffe .btn.grad { background: var(--grad); color: var(--on-primary); }
+html.dueffe .btn.soft { background: var(--card); border: 1px solid var(--line-strong); color: var(--text); }
+
+html.dueffe .empty-icon { background: var(--card-grad); border: 1px solid var(--line); }
+
+/* ---------- screens ---------- */
+html.dueffe .collection-head { background: linear-gradient(to bottom, color-mix(in srgb, var(--tint) 30%, transparent), transparent); }
+html.dueffe .collection-sub { color: var(--accent); }
+html.dueffe .collection-art .art, html.dueffe .collection-art .mosaic { border-radius: 26px; border: 1px solid var(--line); }
+html.dueffe .artist-img { -webkit-mask: linear-gradient(#000 45%, transparent); mask: linear-gradient(#000 45%, transparent); }
+html.dueffe .artist-fade { display: none; }
+html.dueffe .profiles { background: none; }
+html.dueffe .profile-avatar { box-shadow: none; border: 1px solid var(--line-strong); }
+html.dueffe .profile-avatar.add { background: var(--card); }
+html.dueffe .hint { color: var(--dim); }
+
+/* ---------- overlays ---------- */
+html.dueffe .dialog, html.dueffe .sheet { background: var(--bg-elevated); border: 1px solid var(--line); border-radius: 26px; }
+html.dueffe .sheet { border-bottom: 0; border-radius: 26px 26px 0 0; }
+html.dueffe .sheet-handle { background: var(--line-strong); }
+html.dueffe .field { border: 1px solid var(--line-strong); border-radius: 16px; background: var(--bg); }
+html.dueffe .field:focus { border-color: var(--accent); }
+html.dueffe .toast { background: var(--surface-higher); border: 1px solid var(--line-strong); border-radius: 18px; box-shadow: none;
+  animation: df-toast .5s var(--ease-spring); }
+@keyframes df-toast { from { transform: translateY(24px); } }
+html.dueffe .settings { color: var(--text); }
+html.dueffe .apk { background: var(--grad); color: var(--on-primary); border-radius: 22px; }
+html.dueffe .apk.disabled { background: var(--card); color: var(--dim); }
+html.dueffe .menu-item svg { color: var(--accent); }
+
+/* ---------- player ---------- */
+html.dueffe .pp.big { background: var(--grad); color: var(--on-primary); box-shadow: none; }
+html.dueffe .pp.big .spinner { border-color: #16100626; border-top-color: var(--on-primary); }
+html.dueffe .mini { margin: 6px 20px; border-radius: 22px; border: 1px solid var(--line); box-shadow: none;
+  background: linear-gradient(to right, color-mix(in srgb, var(--tint) 45%, transparent), transparent), var(--card-grad); }
+html.dueffe .mini-sub { color: var(--dim); }
+html.dueffe .mini-progress { left: 22px; right: 22px; bottom: 5px; background: var(--surface-higher); }
+html.dueffe .mini-progress div { background: var(--accent); }
+html.dueffe .seek { color: var(--dim); }
+html.dueffe .seek input, html.dueffe .volume { background: linear-gradient(to right, var(--accent) var(--v), var(--surface-higher) var(--v)); }
+html.dueffe .seek input::-webkit-slider-thumb, html.dueffe .volume::-webkit-slider-thumb { background: var(--accent); }
+html.dueffe .seek input::-moz-range-thumb, html.dueffe .volume::-moz-range-thumb { background: var(--accent); }
+html.dueffe .controls.big .icon-btn:not(.active) { color: var(--text); }
+html.dueffe .icon-btn.active { color: var(--accent); }
+/* detail backdrop: artwork blurred (60px, 55%), a glow of its colour, fading into the ground */
+html.dueffe .full { background: var(--bg); }
+html.dueffe .full::before { background: linear-gradient(to bottom, color-mix(in srgb, var(--tint) 20%, transparent), #05050559 30%, var(--bg) 56%); z-index: 1; }
+html.dueffe .full-bg { filter: blur(60px); opacity: .45; inset: -60px -60px 38% -60px; }
+html.dueffe .full-inner { z-index: 2; }
+html.dueffe .caps { color: var(--dim); }
+html.dueffe .full-artist { color: var(--dim); }
+html.dueffe .chip { background: var(--card); border: 1px solid var(--line-strong); }
+html.dueffe .full-art .art { border: 1px solid var(--line); }
+
+/* ---------- shell ---------- */
+html.dueffe .bottom { background: linear-gradient(to bottom, transparent, var(--bg) 40%); }
+/* floating bar: 68 high, radius 28, gold indicator under the chosen tab, its icon bounces in */
+html.dueffe .tabs { height: 68px; margin: 10px 20px 10px; padding: 6px; border-radius: 28px; background: var(--nav); border: 1px solid var(--line);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+html.dueffe .tab { position: relative; isolation: isolate; gap: 2px; color: var(--dim); }
+html.dueffe .tab.on { color: var(--on-primary); }
+html.dueffe .tab-icon { position: static; width: auto; height: 24px; }
+html.dueffe .tab-pill { inset: 0; z-index: -1; border-radius: 22px; background: var(--grad); }
+html.dueffe .tab.on svg { animation: df-bounce .6s var(--ease-spring); }
+@keyframes df-bounce { from { transform: scale(.8); } }
+
+html.dueffe .shell.wide .main, html.dueffe .side { background: #0b0a08d9; border: 1px solid var(--line); border-radius: 26px; }
+html.dueffe .side-item.on { color: var(--on-primary); }
+html.dueffe .side-pill { background: var(--grad); }
+html.dueffe .side-pl:hover, html.dueffe .side-pl.on, html.dueffe .side-me:hover { background: #ffd84d14; }
+html.dueffe .bar-center .pp { background: var(--grad); color: var(--on-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  html.dueffe *, html.dueffe *::before { animation: none !important; transition: none !important; }
+  html.dueffe .head h1, html.dueffe .profiles h1 { background-size: 100% 8px; }
+}
+html.dueffe .profiles h1 { margin: 0 auto; }

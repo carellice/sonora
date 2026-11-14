@@ -137,6 +137,7 @@ fun Root(prefs: SharedPreferences) {
         user = id
     }
     Box(Modifier.fillMaxSize().background(Bg).then(if (Skin.skeu) Modifier.leather() else Modifier)) {
+        if (Skin.dueffe) DfAurora()
         when {
             server.isBlank() -> SetupScreen(prefs.getString("server", "") ?: "") { url ->
                 prefs.edit { putString("server", url) }
@@ -183,7 +184,7 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = if (Skin.skeu) Color.Transparent else Bg,
+            containerColor = if (Skin.skeu || Skin.dueffe) Color.Transparent else Bg,
             bottomBar = {
                 Column {
                     AnimatedVisibility(
@@ -195,6 +196,16 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                     if (Skin.metro) MetroAppBar(route, nav) { settings = true }
                     else if (Skin.nothing) NothingNavBar(
                         listOf("library" to "Libreria", "search" to "Cerca"),
+                        isOn = { r -> route == r || (r == "library" && route !in setOf("library", "search") && nav.previousBackStackEntry?.destination?.route == "library") },
+                    ) { r ->
+                        nav.navigate(r) {
+                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    else if (Skin.dueffe) DueffeNavBar(
+                        listOf(Triple("library", "Libreria", Icons.Rounded.LibraryMusic), Triple("search", "Cerca", Icons.Rounded.Search)),
                         isOn = { r -> route == r || (r == "library" && route !in setOf("library", "search") && nav.previousBackStackEntry?.destination?.route == "library") },
                     ) { r ->
                         nav.navigate(r) {
@@ -220,12 +231,12 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                                         }
                                     },
                                     icon = { Icon(icon, label) },
-                                    label = { Text(label, fontWeight = FontWeight.SemiBold, style = if (skeu) OnMetal else androidx.compose.ui.text.TextStyle.Default) },
+                                    label = { Text(label, fontWeight = FontWeight.SemiBold, style = if (skeu) OnMetal else BaseText) },
                                     colors = if (skeu) NavigationBarItemDefaults.colors(
                                         selectedIconColor = Color(0xFFE08400), selectedTextColor = Color(0xFFB86400), indicatorColor = Color.Black.copy(alpha = .18f),
                                         unselectedIconColor = MetalDim, unselectedTextColor = MetalDim,
                                     ) else NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Color.White, selectedTextColor = Color.White, indicatorColor = Accent.copy(alpha = .85f),
+                                        selectedIconColor = Ink, selectedTextColor = Ink, indicatorColor = Accent.copy(alpha = .85f),
                                         unselectedIconColor = Dim, unselectedTextColor = Dim,
                                     ),
                                 )
@@ -238,7 +249,8 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                 nav, "library", Modifier.padding(bottom = pad.calculateBottomPadding()), // screens handle the status bar themselves
                 // Modern UI: the page turnstiles in by itself (Turnstile), the navigator only cross-fades quickly
                 // Nothing: pages only fade, no movement
-                enterTransition = { if (Skin.metro) fadeIn(tween(120)) else if (Skin.nothing) fadeIn(tween(250)) else slideInHorizontally(tween(300)) { it / 8 } + fadeIn(tween(300)) },
+                // Dueffe: pages slide in by 8% in 460ms on the Reveal curve
+                enterTransition = { if (Skin.metro) fadeIn(tween(120)) else if (Skin.nothing) fadeIn(tween(250)) else if (Skin.dueffe) slideInHorizontally(tween(460, easing = DfReveal)) { (it * .08f).toInt() } + fadeIn(tween(460, easing = DfReveal)) else slideInHorizontally(tween(300)) { it / 8 } + fadeIn(tween(300)) },
                 exitTransition = { fadeOut(tween(if (Skin.metro) 120 else 200)) },
                 popEnterTransition = { fadeIn(tween(if (Skin.metro) 120 else 300)) },
                 popExitTransition = { if (Skin.metro) fadeOut(tween(120)) else if (Skin.nothing) fadeOut(tween(200)) else slideOutHorizontally(tween(250)) { it / 8 } + fadeOut(tween(250)) },
@@ -273,7 +285,7 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                 if (Skin.nothing) NdLabel("Stile grafica") else Text("Stile grafica", fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
                 // a list, not tabs: four names don't fit side by side
-                Skin.styles.zip(listOf("Moderno", "Skeuomorfismo", "Modern UI", "Nothing")).forEach { (s, label) ->
+                Skin.styles.zip(listOf("Moderno", "Skeuomorfismo", "Modern UI", "Nothing", "Dueffe")).forEach { (s, label) ->
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { Skin.set(s) },
                         verticalAlignment = Alignment.CenterVertically,
@@ -312,14 +324,14 @@ fun UpdateBanner(info: ApkInfo?, onDismiss: () -> Unit) {
                 .clip(corner(18.dp)).background(AccentBrush).padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Rounded.Download, null, tint = Color.White)
+            Icon(Icons.Rounded.Download, null, tint = OnAccent)
             Spacer(Modifier.width(12.dp))
-            Text("Sonora ${info?.version ?: ""} è disponibile", Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+            Text("Sonora ${info?.version ?: ""} è disponibile", Modifier.weight(1f), fontWeight = FontWeight.SemiBold, color = OnAccent)
             TextButton(onClick = {
                 ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${Api.base}/sonora.apk")))
                 onDismiss()
-            }) { Text("Aggiorna", color = Color.White, fontWeight = FontWeight.Bold) }
-            IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, "Chiudi", tint = Color.White) }
+            }) { Text("Aggiorna", color = OnAccent, fontWeight = FontWeight.Bold) }
+            IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, "Chiudi", tint = OnAccent) }
         }
     }
 }
@@ -374,9 +386,9 @@ private fun MenuItem(icon: ImageVector, text: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (Skin.metro) return@Row Text(text.lowercase(), fontSize = 21.sp, fontWeight = FontWeight.Light)
-        Icon(icon, null, tint = if (Skin.skeu) Accent else if (Skin.nothing) NdSecondary else Color.White)
+        Icon(icon, null, tint = if (Skin.skeu || Skin.dueffe) Accent else if (Skin.nothing) NdSecondary else Ink)
         Spacer(Modifier.width(18.dp))
-        Text(text, fontSize = 15.sp, style = skeuText())
+        Text(text, fontSize = 15.sp, style = if (Skin.dueffe) BaseText else skeuText())
     }
 }
 
@@ -457,16 +469,16 @@ private fun MetroAppBar(route: String?, nav: NavController, onMore: () -> Unit) 
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(
-                    Modifier.size(44.dp).ring().background(if (on) Color.White else Color.Transparent),
+                    Modifier.size(44.dp).ring().background(if (on) Ink else Color.Transparent),
                     contentAlignment = Alignment.Center,
-                ) { Icon(icon, label, tint = if (on) Color.Black else Color.White, modifier = Modifier.size(22.dp)) }
+                ) { Icon(icon, label, tint = if (on) Color.Black else Ink, modifier = Modifier.size(22.dp)) }
                 Spacer(Modifier.height(4.dp))
-                Text(label, fontSize = 12.sp, color = if (on) Color.White else MetroSubtle)
+                Text(label, fontSize = 12.sp, color = if (on) Ink else MetroSubtle)
             }
         }
         Spacer(Modifier.weight(1f))
         Text(
-            "•••", fontSize = 18.sp, letterSpacing = 2.sp, color = Color.White,
+            "•••", fontSize = 18.sp, letterSpacing = 2.sp, color = Ink,
             modifier = Modifier.clickable(onClick = onMore).padding(horizontal = 18.dp, vertical = 8.dp),
         )
     }

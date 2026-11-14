@@ -131,7 +131,7 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
     Box(
-        Modifier.fillMaxSize().background(if (Skin.metro || Skin.nothing) Brush.verticalGradient(listOf(Bg, Bg)) else Brush.verticalGradient(listOf(Accent2.copy(alpha = .35f), Bg, Bg)))
+        Modifier.fillMaxSize().background(if (Skin.dueffe) Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent)) else if (Skin.metro || Skin.nothing) Brush.verticalGradient(listOf(Bg, Bg)) else Brush.verticalGradient(listOf(Accent2.copy(alpha = .35f), Bg, Bg)))
             .then(if (Skin.nothing) Modifier.dotGrid() else Modifier)
             .imePadding().verticalScroll(rememberScrollState()),
         contentAlignment = Alignment.Center,
@@ -141,10 +141,10 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
                 val logo = if (Skin.metro) androidx.compose.ui.graphics.RectangleShape else CircleShape
                 if (Skin.nothing) NdHero("Sonora", size = 64.sp)
                 else Box(Modifier.size(96.dp).shadow(if (Skin.metro) 0.dp else 24.dp, logo, spotColor = Accent).clip(logo).background(AccentBrush), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.MusicNote, null, tint = Color.White, modifier = Modifier.size(48.dp))
+                    Icon(Icons.Rounded.MusicNote, null, tint = OnAccent, modifier = Modifier.size(48.dp))
                 }
                 Spacer(Modifier.height(24.dp))
-                Text("Benvenuto in Sonora".mt(), fontSize = if (Skin.metro) 34.sp else 28.sp, fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Normal else FontWeight.ExtraBold)
+                Text("Benvenuto in Sonora".mt(), fontSize = if (Skin.metro) 34.sp else 28.sp, fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Normal else FontWeight.ExtraBold, style = skeuText())
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "Inserisci l'indirizzo HTTPS del proxy Tailscale del tuo server di casa.",
@@ -189,7 +189,7 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
     val r = if (skeu) 8.dp else 17.dp
     BoxWithConstraints(
         modifier.fillMaxWidth().height(42.dp)
-            .then(if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 3.dp) else Modifier.clip(RoundedCornerShape(21.dp)).background(Card))
+            .then(if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 3.dp) else Modifier.clip(RoundedCornerShape(21.dp)).background(Card).then(if (Skin.dueffe) Modifier.border(1.dp, DfLine, RoundedCornerShape(21.dp)) else Modifier))
             .padding(4.dp),
     ) {
         val w = maxWidth / tabs.size
@@ -197,14 +197,14 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
         Box(Modifier.offset(x = x).width(w).height(34.dp).then(if (skeu) Modifier.inset(RoundedCornerShape(r)) else Modifier.clip(RoundedCornerShape(r)).background(AccentBrush)))
         Row(Modifier.fillMaxSize()) {
             tabs.forEachIndexed { i, t ->
-                val c by animateColorAsState(if (i == selected) (if (skeu) Amber else Color.White) else if (skeu) MetalText else Dim, label = "tabc")
+                val c by animateColorAsState(if (i == selected) (if (skeu) Amber else OnAccent) else if (skeu) MetalText else Dim, label = "tabc")
                 Box(
                     Modifier.weight(1f).height(34.dp).clip(RoundedCornerShape(r)).clickable { onSelect(i) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         t, color = c, fontWeight = FontWeight.SemiBold, fontSize = if (tabs.size > 4 || tabs.any { it.length > 10 }) 12.sp else 13.sp, maxLines = 1,
-                        style = if (!skeu) androidx.compose.ui.text.TextStyle.Default else if (i == selected) glow() else OnMetal,
+                        style = if (!skeu) BaseText else if (i == selected) glow() else OnMetal,
                     )
                 }
             }
@@ -218,7 +218,7 @@ private fun NdSegmented(tabs: List<String>, selected: Int, onSelect: (Int) -> Un
     BoxWithConstraints(modifier.fillMaxWidth().height(40.dp).ndOutline().padding(3.dp)) {
         val w = maxWidth / tabs.size
         val x by animateDpAsState(w * selected, tween(200, easing = androidx.compose.animation.core.CubicBezierEasing(.25f, .1f, .25f, 1f)), label = "ndtab")
-        Box(Modifier.offset(x = x).width(w).fillMaxHeight().clip(CircleShape).background(Color.White))
+        Box(Modifier.offset(x = x).width(w).fillMaxHeight().clip(CircleShape).background(Ink))
         Row(Modifier.fillMaxSize()) {
             tabs.forEachIndexed { i, t ->
                 val c by animateColorAsState(if (i == selected) Color.Black else NdSecondary, tween(200), label = "ndtabc")
@@ -255,6 +255,7 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (Skin.metro) MetroTitle("Sonora · Libreria", Modifier.weight(1f))
                 else if (Skin.nothing) NdHero("Libreria", Modifier.weight(1f).padding(top = 8.dp))
+                else if (Skin.dueffe) Box(Modifier.weight(1f).padding(top = 8.dp)) { DfHeadline("Libreria") }
                 else Text("Libreria", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), style = skeuText())
                 IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, "Impostazioni", tint = Dim) }
             }
@@ -337,7 +338,7 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                                         Modifier.size(56.dp).then(if (Skin.skeu) Modifier.glossAmber(RoundedCornerShape(8.dp)) else Modifier.clip(corner(12.dp)).background(AccentBrush)),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        Icon(Icons.Rounded.Add, null, tint = if (Skin.skeu) Color(0xFF4A2A00) else Color.White, modifier = Modifier.size(30.dp))
+                                        Icon(Icons.Rounded.Add, null, tint = if (Skin.skeu) Color(0xFF4A2A00) else OnAccent, modifier = Modifier.size(30.dp))
                                     }
                                     Spacer(Modifier.width(14.dp))
                                     Text("Nuova playlist".mt(), fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Normal else FontWeight.SemiBold, fontSize = if (Skin.metro) 22.sp else 16.sp, style = skeuText())
@@ -485,6 +486,7 @@ fun SearchScreen(nav: NavController) {
             MetroTitle("Sonora", Modifier.padding(start = 20.dp, top = 22.dp))
             Text("cerca", fontSize = 56.sp, fontWeight = FontWeight.Light, modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
         } else if (Skin.nothing) NdHero("Cerca", Modifier.padding(start = 20.dp, top = 20.dp, bottom = 16.dp))
+        else if (Skin.dueffe) DfHeadline("Cerca", Modifier.padding(start = 20.dp, top = 20.dp, bottom = 12.dp))
         else Text("Cerca", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp))
         SearchField(q, { q = it }, "Artisti, brani, album…", Modifier.padding(horizontal = 16.dp), big = true)
         SegmentedTabs(types, type, { type = it }, if (Skin.metro) Modifier.padding(top = 10.dp) else Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
@@ -532,7 +534,7 @@ fun BackButton(nav: NavController, modifier: Modifier = Modifier) {
             else if (Skin.nothing) Modifier.clip(CircleShape).background(NdSurface).border(1.dp, NdBorder, CircleShape)
             else Modifier.clip(CircleShape).background(Color.Black.copy(alpha = .35f)),
         ),
-    ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Indietro", tint = Color.White) }
+    ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Indietro", tint = Ink) }
 }
 
 @Composable
@@ -573,7 +575,7 @@ fun CollectionScreen(
             item {
                 Column(
                     Modifier.fillMaxWidth()
-                        .background(Brush.verticalGradient(if (Skin.skeu) listOf(tint.copy(alpha = .45f), Color.Transparent) else if (Skin.metro || Skin.nothing) listOf(Bg, Bg) else listOf(tint, Bg)))
+                        .background(Brush.verticalGradient(if (Skin.skeu) listOf(tint.copy(alpha = .45f), Color.Transparent) else if (Skin.metro || Skin.nothing) listOf(Bg, Bg) else if (Skin.dueffe) listOf(tint.copy(alpha = .3f), Color.Transparent) else listOf(tint, Bg)))
                         .statusBarsPadding().padding(top = 48.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -586,13 +588,13 @@ fun CollectionScreen(
                     )
                     Spacer(Modifier.height(20.dp))
                     Text(
-                        title.mt(), fontSize = if (Skin.metro) 32.sp else if (Skin.nothing) 28.sp else 24.sp,
+                        title.mt(), fontSize = if (Skin.metro) 32.sp else if (Skin.nothing || Skin.dueffe) 28.sp else 24.sp,
                         fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Medium else FontWeight.ExtraBold,
                         textAlign = TextAlign.Center, style = skeuText(), modifier = Modifier.padding(horizontal = 24.dp),
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        subtitle, color = if (onSubtitle != null) (if (Skin.metro) MetroAccent else if (Skin.nothing) NdPrimary else Color.White.copy(alpha = .85f)) else Dim, fontSize = 15.sp,
+                        subtitle, color = if (onSubtitle != null) (if (Skin.metro) MetroAccent else if (Skin.nothing) NdPrimary else if (Skin.dueffe) DfPrimary else Ink.copy(alpha = .85f)) else Dim, fontSize = 15.sp,
                         fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 24.dp).clip(RoundedCornerShape(8.dp))
                             .then(if (onSubtitle != null) Modifier.clickable(onClick = onSubtitle) else Modifier).padding(4.dp),
@@ -634,10 +636,10 @@ fun DownloadAllButton(tracks: List<Track>) {
         when {
             busy -> Box(contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(Modifier.size(30.dp), color = Accent, strokeWidth = 2.5.dp)
-                Icon(Icons.Rounded.Close, "Annulla download", tint = Color.White, modifier = Modifier.size(16.dp))
+                Icon(Icons.Rounded.Close, "Annulla download", tint = Ink, modifier = Modifier.size(16.dp))
             }
             all -> Icon(Icons.Rounded.DownloadDone, "Rimuovi i download", tint = Accent)
-            else -> Icon(Icons.Rounded.Download, "Scarica tutto", tint = Color.White)
+            else -> Icon(Icons.Rounded.Download, "Scarica tutto", tint = Ink)
         }
     }
 }
@@ -648,7 +650,7 @@ fun HeartButton(saved: Boolean, onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.size(48.dp).roundButton()) {
         Icon(
             if (saved) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (saved) "Rimuovi dalla libreria" else "Salva in libreria",
-            tint = if (saved) (if (Skin.nothing) NdRed else Accent) else Color.White, modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
+            tint = if (saved) (if (Skin.nothing) NdRed else Accent) else Ink, modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
         )
     }
 }
@@ -682,7 +684,7 @@ fun PlaylistScreen(id: String, nav: NavController) {
                         }
                     },
                     modifier = Modifier.size(48.dp).roundButton(),
-                ) { Icon(Icons.Rounded.LibraryAdd, "Salva in libreria", tint = Color.White) }
+                ) { Icon(Icons.Rounded.LibraryAdd, "Salva in libreria", tint = Ink) }
             },
         )
     }
@@ -699,7 +701,7 @@ fun LocalPlaylistScreen(id: String, nav: NavController) {
         art = { Mosaic(p.tracks.mapNotNull { it.thumb }, it) },
         actions = {
             IconButton(onClick = { confirm = true }, modifier = Modifier.size(48.dp).roundButton()) {
-                Icon(Icons.Rounded.Delete, "Elimina playlist", tint = Color.White)
+                Icon(Icons.Rounded.Delete, "Elimina playlist", tint = Ink)
             }
         },
     )
@@ -730,10 +732,10 @@ fun ArtistScreen(id: String, nav: NavController) {
                     Box(Modifier.fillMaxWidth().height(340.dp).clipToBounds()) {
                         val off = if (list.firstVisibleItemIndex == 0) list.firstVisibleItemScrollOffset else 0
                         Artwork(
-                            a.thumb, Modifier.fillMaxSize().graphicsLayer { translationY = off * .45f; val s = 1f + off / 2400f; scaleX = s; scaleY = s },
+                            a.thumb, Modifier.fillMaxSize().graphicsLayer { translationY = off * .45f; val s = 1f + off / 2400f; scaleX = s; scaleY = s }.then(if (Skin.dueffe) Modifier.dfFadeOut() else Modifier),
                             RoundedCornerShape(0.dp), Icons.Rounded.Person,
                         )
-                        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Bg.copy(alpha = .4f), Bg))))
+                        if (!Skin.dueffe) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Bg.copy(alpha = .4f), Bg))))
                         Row(Modifier.align(Alignment.BottomStart).padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 a.name.mt(), fontSize = if (Skin.metro) 46.sp else if (Skin.nothing) 44.sp else 36.sp,
@@ -773,7 +775,7 @@ fun ArtistScreen(id: String, nav: NavController) {
 
 @Composable
 fun SectionTitle(t: String) = if (Skin.nothing) NdLabel(t, Modifier.padding(start = 20.dp, top = 36.dp, bottom = 10.dp)) else Text(
-    t.mt(), fontSize = if (Skin.metro) 30.sp else 20.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.Bold,
+    t.mt(), fontSize = if (Skin.metro) 30.sp else if (Skin.dueffe) 22.sp else 20.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.Bold,
     style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp),
 )
 
@@ -809,12 +811,13 @@ fun ProfileScreen(onPick: (String) -> Unit) {
     }
 
     Column(
-        Modifier.fillMaxSize().then(if (Skin.skeu || Skin.metro) Modifier else if (Skin.nothing) Modifier.dotGrid() else Modifier.background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg)))).statusBarsPadding(),
+        Modifier.fillMaxSize().then(if (Skin.skeu || Skin.metro || Skin.dueffe) Modifier else if (Skin.nothing) Modifier.dotGrid() else Modifier.background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg)))).statusBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(64.dp))
         if (Skin.metro) Text("chi ascolta?", fontSize = 44.sp, fontWeight = FontWeight.Light)
         else if (Skin.nothing) NdHero("Chi ascolta?", size = 46.sp)
+        else if (Skin.dueffe) DfHeadline("Chi ascolta?")
         else Text("Chi ascolta?", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText())
         Spacer(Modifier.height(6.dp))
         Text("Ogni profilo ha la sua libreria e le sue playlist", color = if (Skin.nothing) NdDisabled else Dim, fontSize = 15.sp, textAlign = TextAlign.Center)
@@ -835,7 +838,7 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                             Box(Modifier.fillMaxSize().background(profileBrush(p.id)), contentAlignment = Alignment.Center) {
                                 Text(
                                     p.name.take(1).uppercase(), fontSize = if (Skin.metro) 56.sp else if (Skin.nothing) 60.sp else 48.sp,
-                                    fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold, color = Color.White, fontFamily = if (Skin.nothing) NdDot else null,
+                                    fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold, color = Ink, fontFamily = if (Skin.nothing) NdDot else null,
                                 )
                             }
                         }
@@ -847,11 +850,11 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                             Box(
                                 Modifier.fillMaxSize().then(
                                     if (Skin.skeu) Modifier.background(Brush.radialGradient(listOf(Color(0xFF4A433C), Color(0xFF221E1A))))
-                                    else if (Skin.metro) Modifier.border(2.dp, Color.White) else if (Skin.nothing) Modifier else Modifier.background(Card),
+                                    else if (Skin.metro) Modifier.border(2.dp, Ink) else if (Skin.nothing) Modifier else Modifier.background(Card),
                                 ),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(Icons.Rounded.Add, null, tint = if (Skin.metro) Color.White else Dim, modifier = Modifier.size(44.dp))
+                                Icon(Icons.Rounded.Add, null, tint = if (Skin.metro) Ink else Dim, modifier = Modifier.size(44.dp))
                             }
                         }
                     }
@@ -907,13 +910,14 @@ private fun ProfileBubble(name: String, click: Modifier, avatar: @Composable () 
                         drawContent()
                         drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .35f)), startY = size.height * .5f))
                         drawOval(
-                            Brush.verticalGradient(listOf(Color.White.copy(alpha = .55f), Color.Transparent), startY = 6f, endY = size.height * .5f),
+                            Brush.verticalGradient(listOf(Ink.copy(alpha = .55f), Color.Transparent), startY = 6f, endY = size.height * .5f),
                             topLeft = Offset(size.width * .14f, 6f), size = Size(size.width * .72f, size.height * .44f),
                         )
                     },
             ) { avatar() }
         } else if (Skin.metro) Box(Modifier.size(132.dp).then(click)) { avatar() } // square live tile
         else if (Skin.nothing) Box(Modifier.size(116.dp).clip(CircleShape).border(1.dp, NdBorderVisible, CircleShape).then(click)) { avatar() }
+        else if (Skin.dueffe) Box(Modifier.size(116.dp).clip(CircleShape).border(1.dp, DfLineStrong, CircleShape).then(click)) { avatar() }
         else Box(Modifier.size(116.dp).shadow(18.dp, CircleShape).clip(CircleShape).then(click)) { avatar() }
         Spacer(Modifier.height(if (Skin.metro) 6.dp else 12.dp))
         if (Skin.nothing) NdLabel(name, color = NdPrimary, size = 12.sp)

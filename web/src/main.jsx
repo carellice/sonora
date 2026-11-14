@@ -5,12 +5,14 @@ import './styles.css'
 import './skeu.css'
 import './metro.css'
 import './nothing.css'
+import './dueffe.css'
 
 // skin chosen in Impostazioni → Stile grafica
 const skin = localStorage.getItem('sonora.skin')
 document.documentElement.classList.toggle('skeu', skin === 'skeu')
 document.documentElement.classList.toggle('metro', skin === 'metro')
 document.documentElement.classList.toggle('nothing', skin === 'nothing')
+document.documentElement.classList.toggle('dueffe', skin === 'dueffe')
 
 createRoot(document.getElementById('root')).render(<StrictMode><App /></StrictMode>)
 

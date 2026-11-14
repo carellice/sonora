@@ -49,6 +49,8 @@ function Screen({ route, onSettings }) {
 
 // Nothing: pages only fade, quick ease-out, no movement
 const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } }
+// Dueffe: pages slide in by 8% in 460ms on the Reveal curve
+const REVEAL = { initial: { opacity: 0, x: '8%' }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0 }, transition: { duration: 0.46, ease: [0.22, 0.78, 0.16, 1] } }
 const SLIDE = { initial: { opacity: 0, x: 24 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0 }, transition: { duration: 0.22 } }
 // Modern UI: pages swing in like a turnstile, hinged on the left edge
 const TURNSTILE = {
@@ -69,7 +71,7 @@ function Shell() {
       <main className="main">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div key={`${stack.length}-${route.name}-${route.id || ''}`} className="page"
-            {...(document.documentElement.classList.contains('metro') ? TURNSTILE : document.documentElement.classList.contains('nothing') ? FADE : SLIDE)}>
+            {...(document.documentElement.classList.contains('metro') ? TURNSTILE : document.documentElement.classList.contains('nothing') ? FADE : document.documentElement.classList.contains('dueffe') ? REVEAL : SLIDE)}>
             <Screen route={route} onSettings={() => setSettings(true)} />
           </motion.div>
         </AnimatePresence>
@@ -198,7 +200,7 @@ function AddToPlaylist() {
   )
 }
 
-const SKINS = ['classic', 'skeu', 'metro', 'nothing'] // the class on <html>; "classic" has no rules
+const SKINS = ['classic', 'skeu', 'metro', 'nothing', 'dueffe'] // the class on <html>; "classic" has no rules
 
 function Settings({ open, onClose }) {
   const [info, setInfo] = useState(null)
@@ -214,7 +216,14 @@ function Settings({ open, onClose }) {
     <Dialog open={open} onClose={onClose} title="Impostazioni" actions={<button className="text-btn dim" onClick={onClose}>Chiudi</button>}>
       <div className="settings">
         <b>Stile grafica</b>
-        <SegmentedTabs id="skin" tabs={['Moderno', 'Skeuomorfismo', 'Modern UI', 'Nothing']} selected={Math.max(0, SKINS.indexOf(skin))} onSelect={pickSkin} />
+        {/* a list, not tabs: five names don't fit side by side */}
+        <div className="pick-list skins" role="radiogroup">
+          {['Moderno', 'Skeuomorfismo', 'Modern UI', 'Nothing', 'Dueffe'].map((label, i) => (
+            <button key={label} role="radio" aria-checked={skin === SKINS[i]} className={`pick ${skin === SKINS[i] ? 'accent' : ''}`} onClick={() => pickSkin(i)}>
+              <span className="skin-dot" />{label}
+            </button>
+          ))}
+        </div>
         <div style={{ height: 8 }} />
         <a className={`apk ${info?.apk ? '' : 'disabled'}`} href={info?.apk ? '/sonora.apk' : undefined} download>
           <Icon name="android" size={32} />
