@@ -16,6 +16,7 @@ function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.i
 export const profileGradient = (id) => {
   const [a, b] = GRADIENTS[((hashCode(id) % GRADIENTS.length) + GRADIENTS.length) % GRADIENTS.length]
   if (document.documentElement.classList.contains('metro')) return a // flat tiles in Modern UI
+  if (document.documentElement.classList.contains('nothing')) return '#111' // monochrome in Nothing
   return `linear-gradient(135deg, ${a}, ${b})`
 }
 

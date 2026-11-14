@@ -41,13 +41,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.random.Random
 
-/** Graphic style picked in Impostazioni → Stile grafica: "classic", "skeu" (skeuomorphism, "Hi-Fi") or "metro" (Modern UI). */
+/** Graphic style picked in Impostazioni → Stile grafica: "classic", "skeu" (skeuomorphism, "Hi-Fi") or "metro" (Modern UI) or "nothing" (Nothing). */
 object Skin {
-    val styles = listOf("classic", "skeu", "metro")
+    val styles = listOf("classic", "skeu", "metro", "nothing")
     var style by mutableStateOf("classic")
         private set
     val skeu get() = style == "skeu"
     val metro get() = style == "metro"
+    val nothing get() = style == "nothing"
     private var prefs: SharedPreferences? = null
 
     fun init(p: SharedPreferences) { prefs = p; style = p.getString("skin", "")?.takeIf { it in styles } ?: "classic" }

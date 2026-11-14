@@ -1,0 +1,228 @@
+/* Nothing skin: active when <html> has the class "nothing" (Impostazioni → Stile grafica).
+   Nothing design system: OLED black, monochrome, Space Grotesk + Space Mono ALL CAPS labels, Doto dot-matrix heroes,
+   segmented bars, thin borders instead of shadows, red #D71921 only as a signal (playing now, saved, toggles on). */
+@font-face { font-family: 'Space Grotesk'; src: url('./fonts/SpaceGrotesk.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
+@font-face { font-family: 'Space Mono'; src: url('./fonts/SpaceMono-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Space Mono'; src: url('./fonts/SpaceMono-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Doto'; src: url('./fonts/Doto.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+html.nothing {
+  --bg: #000;
+  --card: #111;
+  --card-hi: #1a1a1a;
+  --accent: #fff;
+  --accent2: #999;
+  --dim: #999;
+  --grad: #1a1a1a;
+  --border: #222;
+  --border-vis: #333;
+  --t-disabled: #666;
+  --t-primary: #e8e8e8;
+  --red: #d71921;
+  --eq: #fff;
+  --heart: var(--red);
+  --mono: 'Space Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --dot: 'Doto', 'Space Mono', monospace;
+  --ease: cubic-bezier(.25, .1, .25, 1);
+  /* discrete blocks with 2px gaps: the signature segmented bar */
+  --segments: repeating-linear-gradient(to right, #000 0 6px, transparent 6px 8px);
+}
+html.nothing body { font-family: 'Space Grotesk', 'DM Sans', system-ui, sans-serif; color: var(--t-primary); }
+
+/* type roles: Doto for the one hero per screen, Space Mono ALL CAPS for labels */
+html.nothing .head h1, html.nothing .profiles h1, html.nothing .artist-name h1, html.nothing .logo {
+  font-family: var(--dot); font-weight: 700; letter-spacing: -.02em; color: #fff;
+}
+html.nothing .section, html.nothing .caps, html.nothing .side-title, html.nothing .sheet-title, html.nothing .profile-name,
+html.nothing .card-sub, html.nothing .mini-sub, html.nothing .full-artist, html.nothing .hint, html.nothing .collection-info > .dim.small,
+html.nothing .seg-item, html.nothing .btn, html.nothing .text-btn, html.nothing .chip, html.nothing .tab, html.nothing .side-item, html.nothing .toast {
+  font-family: var(--mono); text-transform: uppercase; font-weight: 400;
+}
+
+/* ---------- basics ---------- */
+html.nothing .icon-btn { transition: background .2s var(--ease), color .2s var(--ease); }
+html.nothing .icon-btn:hover { background: var(--card-hi); }
+html.nothing .icon-btn.active { color: var(--red); }
+html.nothing .icon-btn.round { background: var(--card); border: 1px solid var(--border-vis); }
+html.nothing .back-btn { background: var(--card) !important; border: 1px solid var(--border); backdrop-filter: none; }
+html.nothing .text-btn { color: var(--t-primary); font-size: 13px; letter-spacing: .06em; border-radius: 999px; padding: 12px 18px; }
+html.nothing .text-btn.dim { color: var(--dim); }
+html.nothing .text-btn:hover { background: none; color: #fff; }
+html.nothing .art { background: var(--card); }
+html.nothing .art-ph { color: #333; }
+html.nothing .avatar { background: var(--card); border: 1px solid var(--border-vis); font-family: var(--dot); font-weight: 700; }
+html.nothing .eq i { border-radius: 0; }
+
+/* segmented hardware spinner: twelve blocks, ticking round instead of spinning smoothly */
+html.nothing .spinner {
+  border: 0; background: repeating-conic-gradient(#fff 0 18deg, transparent 18deg 30deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: spin 1.2s steps(12) infinite; opacity: .9;
+}
+html.nothing .pp.big .spinner, html.nothing .bar-center .pp .spinner, html.nothing .mini .pp .spinner { background: repeating-conic-gradient(#000 0 18deg, transparent 18deg 30deg); }
+html.nothing .progress { height: 4px; margin: 12px 16px 0; }
+html.nothing .progress-bar { background: #fff; -webkit-mask: var(--segments); mask: var(--segments); animation: nd-bar 1.4s steps(14) infinite; }
+@keyframes nd-bar { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+
+/* ---------- rows and cards: full-width dividers, no highlight boxes ---------- */
+html.nothing .track { margin: 0 16px; padding: 10px 0; border-radius: 0; border-bottom: 1px solid var(--border); transition: opacity .2s var(--ease); }
+html.nothing .track:hover { background: none; opacity: .8; }
+html.nothing .track.current { background: none; }
+html.nothing .track.current .track-title { color: #fff; }
+/* the red dot: "this one is playing" */
+html.nothing .track.current .track-title::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin: 0 8px 2px 0; vertical-align: middle;
+}
+html.nothing .track-title { font-weight: 400; font-size: 15px; }
+html.nothing .track-sub { font-size: 13px; }
+html.nothing .track-index { font-family: var(--mono); font-size: 13px; color: var(--t-disabled); font-weight: 400; }
+html.nothing .track-art-eq { border-radius: 8px; background: rgba(0,0,0,.6); }
+html.nothing .new-pl { background: var(--card); border: 1px solid var(--border-vis); border-radius: 12px; }
+html.nothing .card { border-radius: 16px; }
+html.nothing .card:hover { background: none; }
+html.nothing .card-title { font-weight: 400; margin-top: 10px; }
+html.nothing .card-sub { font-size: 11px; letter-spacing: .06em; margin-top: 4px; }
+
+/* ---------- controls ---------- */
+html.nothing .search { background: none; border: 1px solid var(--border-vis); border-radius: 999px; transition: border-color .2s var(--ease); }
+html.nothing .search.filled, html.nothing .search:focus-within { background: none; border-color: var(--t-primary); }
+html.nothing .search input { font-family: var(--mono); font-size: 13px; }
+html.nothing .search.big input { font-size: 15px; }
+html.nothing .search input::placeholder { color: var(--t-disabled); }
+
+/* segmented control: outlined pill, the active segment inverted */
+html.nothing .seg { background: none; border: 1px solid var(--border-vis); border-radius: 999px; padding: 3px; height: 40px; }
+html.nothing .seg-item { font-size: 11px; letter-spacing: .06em; color: var(--dim); border-radius: 999px; }
+html.nothing .seg-item.on { color: #000; }
+html.nothing .seg-pill { background: #fff; border-radius: 999px; }
+html.nothing .settings .seg-item { font-size: 9.5px; letter-spacing: .02em; }
+
+html.nothing .btn { font-size: 13px; letter-spacing: .06em; border-radius: 999px; transition: border-color .2s var(--ease); }
+html.nothing .btn.grad { background: #fff; color: #000; }
+html.nothing .btn.soft { background: none; border: 1px solid var(--border-vis); color: var(--t-primary); }
+html.nothing .btn.soft:hover { border-color: var(--t-primary); }
+html.nothing .btn svg { width: 20px; height: 20px; }
+
+/* empty state: a small dot-matrix disc, quiet grey text */
+html.nothing .empty { padding-top: 96px; }
+html.nothing .empty-icon {
+  background: radial-gradient(circle, #333 1.2px, transparent 1.4px) 0 0 / 8px 8px; color: var(--t-disabled);
+  width: 96px; height: 96px; border: 1px solid var(--border);
+}
+html.nothing .empty-title { font-weight: 400; font-size: 18px; color: var(--dim); margin-top: 24px; }
+html.nothing .empty-text { color: var(--t-disabled); font-size: 13px; }
+
+/* ---------- screens ---------- */
+html.nothing .head { padding-top: calc(20px + var(--safe-top)); }
+html.nothing .head h1 { font-size: 44px; line-height: 1; }
+html.nothing .section { font-size: 11px; letter-spacing: .08em; color: var(--dim); padding: 36px 20px 8px; }
+html.nothing .collection-head { background: none; }
+html.nothing .collection-art { filter: none; }
+html.nothing .collection-art .art, html.nothing .collection-art .mosaic { border-radius: 16px !important; border: 1px solid var(--border); }
+html.nothing .collection-info h2 { font-weight: 500; font-size: 28px; letter-spacing: -.01em; }
+html.nothing .collection-sub { color: var(--t-primary); }
+html.nothing .collection-sub.link { text-decoration: underline; text-decoration-color: var(--border-vis); text-underline-offset: 4px; }
+html.nothing .collection-info > .dim.small { font-size: 11px; letter-spacing: .08em; margin-top: 4px; }
+html.nothing .artist-fade { background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,.6), #000); }
+html.nothing .artist-name h1 { font-size: 48px; line-height: 1; }
+
+/* profiles: dot-grid canvas, monochrome discs with dot-matrix initials */
+html.nothing .profiles { background: radial-gradient(circle, #1c1c1c 1px, transparent 1.2px) 0 0 / 16px 16px, #000; }
+html.nothing .profiles h1 { font-size: 48px; }
+html.nothing .profiles p { color: var(--t-disabled); }
+html.nothing .profile-avatar { border: 1px solid var(--border-vis); box-shadow: none; font-family: var(--dot); font-weight: 700; font-size: 60px; color: #fff; }
+html.nothing .profile-avatar.add { background: none; border-style: dashed; color: var(--dim); }
+html.nothing .profile-name { font-size: 12px; letter-spacing: .08em; color: var(--t-primary); }
+html.nothing .hint { font-size: 11px; letter-spacing: .08em; color: var(--t-disabled); }
+
+/* ---------- overlays: borders, never shadows ---------- */
+html.nothing .scrim { background: rgba(0,0,0,.8); }
+html.nothing .dialog { background: var(--card); border: 1px solid var(--border-vis); border-radius: 16px; }
+html.nothing .dialog-title { font-weight: 400; font-size: 22px; color: #fff; }
+html.nothing .dialog-body { color: var(--dim); }
+html.nothing .field { border: 0; border-bottom: 1px solid var(--border-vis); border-radius: 0; padding: 0 2px; font-family: var(--mono); font-size: 15px; transition: border-color .2s var(--ease); }
+html.nothing .field:focus { border-bottom-color: var(--t-primary); }
+html.nothing .sheet { background: var(--card); border: 1px solid var(--border-vis); border-bottom: 0; border-radius: 16px 16px 0 0; }
+html.nothing .sheet-handle { width: 36px; height: 2px; background: var(--border-vis); }
+html.nothing .sheet-title { font-size: 11px; letter-spacing: .08em; color: var(--dim); padding: 4px 24px 12px; }
+html.nothing .menu-item { font-size: 15px; gap: 16px; }
+html.nothing .menu-item svg { color: var(--dim); width: 20px; height: 20px; }
+html.nothing .menu-item:hover { background: var(--card-hi); }
+html.nothing .pick { border-radius: 8px; }
+html.nothing .pick:hover { background: var(--card-hi); }
+html.nothing .pick.accent { color: #fff; font-weight: 400; }
+/* status line instead of a floating toast card: [ ADDED TO QUEUE ] */
+html.nothing .toast { background: #000; border: 1px solid var(--border-vis); border-radius: 999px; box-shadow: none; font-size: 11px; letter-spacing: .08em; padding: 10px 18px; }
+html.nothing .toast::before { content: '[ '; color: var(--dim); }
+html.nothing .toast::after { content: ' ]'; color: var(--dim); }
+html.nothing .apk { background: var(--card-hi); border: 1px solid var(--border-vis); border-radius: 16px; }
+html.nothing .apk small { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--dim); }
+html.nothing .apk.disabled { background: none; }
+html.nothing .settings b { font-family: var(--mono); font-weight: 400; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+html.nothing .settings .apk b { font-family: inherit; font-size: 15px; text-transform: none; letter-spacing: 0; color: #fff; }
+html.nothing .settings > p { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--t-disabled); }
+
+/* ---------- player ---------- */
+html.nothing .mini { background: var(--card) !important; border: 1px solid var(--border); border-radius: 16px; box-shadow: none; padding: 8px 8px 14px; }
+html.nothing .mini .art { border-radius: 8px !important; }
+html.nothing .mini-text { font-weight: 400; }
+html.nothing .mini-sub { font-size: 10px; letter-spacing: .08em; color: var(--dim); margin-top: 2px; }
+html.nothing .mini .pp { width: 40px; height: 40px; background: #fff; color: #000; margin-right: 2px; }
+html.nothing .mini .pp svg { width: 24px; height: 24px; }
+html.nothing .mini-progress { left: 12px; right: 12px; bottom: 6px; height: 3px; border-radius: 0; background: var(--border); -webkit-mask: var(--segments); mask: var(--segments); }
+html.nothing .mini-progress div { background: #fff; }
+
+/* seek and volume: segmented bars, no knob */
+html.nothing .seek { font-family: var(--mono); color: var(--dim); }
+html.nothing .seek input, html.nothing .volume {
+  height: 12px; border-radius: 0; background: linear-gradient(to right, #fff var(--v), var(--border) var(--v));
+  -webkit-mask: var(--segments); mask: var(--segments);
+}
+html.nothing .seek input::-webkit-slider-thumb, html.nothing .volume::-webkit-slider-thumb { width: 2px; height: 12px; border-radius: 0; background: transparent; }
+html.nothing .seek input::-moz-range-thumb, html.nothing .volume::-moz-range-thumb { width: 2px; height: 12px; border-radius: 0; background: transparent; }
+html.nothing .controls.big .icon-btn:not(.active) { color: #fff; }
+html.nothing .pp.big { background: #fff; color: #000; box-shadow: none; }
+html.nothing .bar-center .pp { background: #fff; color: #000; }
+
+html.nothing .full { background: radial-gradient(circle, #161616 1px, transparent 1.2px) 0 0 / 16px 16px, #000; }
+html.nothing .full::before, html.nothing .full-bg { display: none; }
+html.nothing .caps { font-size: 11px; letter-spacing: .1em; color: var(--dim); }
+html.nothing .full-top-album { font-weight: 400; color: var(--t-primary); margin-top: 2px; }
+html.nothing .full-art { filter: none; }
+html.nothing .full-art .art { border-radius: 16px !important; border: 1px solid var(--border); }
+html.nothing .full-title { font-weight: 500; font-size: 26px; letter-spacing: -.01em; }
+html.nothing .full-artist { font-size: 12px; letter-spacing: .08em; color: var(--dim); margin-top: 4px; }
+/* the hero of the player: elapsed time in dot-matrix, total time small on the right, the segmented bar below */
+html.nothing .full-seek { flex-wrap: wrap; align-items: flex-end; row-gap: 10px; }
+html.nothing .full-seek span:first-child { order: 0; font-family: var(--dot); font-weight: 700; font-size: 56px; line-height: .9; color: #fff; letter-spacing: -.02em; }
+html.nothing .full-seek span:last-child { order: 1; margin-left: auto; font-size: 12px; letter-spacing: .06em; }
+html.nothing .full-seek input { order: 2; flex: 1 0 100%; height: 16px; }
+html.nothing .full-seek input::-webkit-slider-thumb { height: 16px; }
+html.nothing .chip { background: none; border: 1px solid var(--border-vis); border-radius: 999px; font-size: 11px; letter-spacing: .08em; padding: 10px 18px; }
+html.nothing .chip:hover { border-color: var(--t-primary); }
+
+/* ---------- shell ---------- */
+html.nothing .bottom { background: #000; }
+/* text navigation: [ LIBRERIA ]  CERCA */
+html.nothing .tabs { height: 60px; border-top: 1px solid var(--border); }
+html.nothing .tab { flex-direction: row; gap: 0; font-size: 12px; letter-spacing: .1em; color: var(--t-disabled); transition: color .2s var(--ease); }
+html.nothing .tab.on { color: #fff; }
+html.nothing .tab-icon { display: none; }
+html.nothing .tab.on::before { content: '[\00a0'; }
+html.nothing .tab.on::after { content: '\00a0]'; }
+
+html.nothing .shell.wide { gap: 0; padding: 0; }
+html.nothing .shell.wide .main { background: #000; border-radius: 0; }
+html.nothing .side { background: #000; border-radius: 0; border-right: 1px solid var(--border); padding-top: 24px; }
+html.nothing .logo { font-size: 30px; padding-bottom: 28px; }
+html.nothing .logo img { display: none; }
+html.nothing .side-item { font-size: 12px; letter-spacing: .1em; color: var(--t-disabled); border-radius: 999px; }
+html.nothing .side-item svg { width: 20px; height: 20px; }
+html.nothing .side-pill { background: none; border: 1px solid var(--border-vis); border-radius: 999px; }
+html.nothing .side-title { font-size: 11px; letter-spacing: .08em; padding-top: 32px; }
+html.nothing .side-pl { border-radius: 8px; }
+html.nothing .side-pl:hover, html.nothing .side-pl.on { background: var(--card-hi); }
+html.nothing .side-me:hover { background: var(--card-hi); }
+html.nothing .me-avatar { border: 1px solid var(--border-vis); font-family: var(--dot); font-weight: 700; }
+html.nothing .bar { border-top: 1px solid var(--border); }

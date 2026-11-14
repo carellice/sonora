@@ -43,7 +43,7 @@ export function useArtColor(url, fallback = '#221F2E') {
   return c
 }
 
-export function EqBars({ playing, color = 'var(--accent)' }) {
+export function EqBars({ playing, color = 'var(--eq, var(--accent))' }) {
   return (
     <span className={`eq ${playing ? 'on' : ''}`} style={{ color }}>
       <i /><i /><i />
@@ -59,7 +59,7 @@ export function TrackRow({ t, onClick, index, subtitle, localPlaylistId }) {
   return (
     <motion.div className={`track ${isCur ? 'current' : ''}`} whileTap={{ scale: 0.97 }} onClick={onClick} onContextMenu={openMenu}>
       {index != null ? (
-        <div className="track-index">{isCur ? <EqBars playing={playing} /> : index}</div>
+        <div className="track-index">{isCur ? <EqBars playing={playing} /> : document.documentElement.classList.contains('nothing') ? String(index).padStart(2, '0') : index}</div>
       ) : (
         <div className="track-art">
           <Artwork url={t.thumb} size={50} />
@@ -167,7 +167,7 @@ export function HeartButton({ saved, onClick, round = true, size = 24 }) {
   return (
     <motion.button className={`icon-btn ${round ? 'round' : ''}`} whileTap={{ scale: 0.8 }} onClick={(e) => { e.stopPropagation(); onClick() }}
       aria-label={saved ? 'Rimuovi dalla libreria' : 'Salva in libreria'} title={saved ? 'Rimuovi dalla libreria' : 'Salva in libreria'}>
-      <motion.span animate={{ scale: saved ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 8 }} style={{ display: 'flex', color: saved ? 'var(--accent)' : '#fff' }}>
+      <motion.span animate={{ scale: saved ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 8 }} style={{ display: 'flex', color: saved ? 'var(--heart, var(--accent))' : '#fff' }}>
         <Icon name={saved ? 'favorite' : 'favorite_border'} size={size} />
       </motion.span>
     </motion.button>

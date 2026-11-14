@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -130,18 +131,20 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
     Box(
-        Modifier.fillMaxSize().background(if (Skin.metro) Brush.verticalGradient(listOf(Bg, Bg)) else Brush.verticalGradient(listOf(Accent2.copy(alpha = .35f), Bg, Bg)))
+        Modifier.fillMaxSize().background(if (Skin.metro || Skin.nothing) Brush.verticalGradient(listOf(Bg, Bg)) else Brush.verticalGradient(listOf(Accent2.copy(alpha = .35f), Bg, Bg)))
+            .then(if (Skin.nothing) Modifier.dotGrid() else Modifier)
             .imePadding().verticalScroll(rememberScrollState()),
         contentAlignment = Alignment.Center,
     ) {
         AnimatedVisibility(shown, enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { it / 6 }) {
             Column(Modifier.statusBarsPadding().padding(28.dp).padding(top = 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 val logo = if (Skin.metro) androidx.compose.ui.graphics.RectangleShape else CircleShape
-                Box(Modifier.size(96.dp).shadow(if (Skin.metro) 0.dp else 24.dp, logo, spotColor = Accent).clip(logo).background(AccentBrush), contentAlignment = Alignment.Center) {
+                if (Skin.nothing) NdHero("Sonora", size = 64.sp)
+                else Box(Modifier.size(96.dp).shadow(if (Skin.metro) 0.dp else 24.dp, logo, spotColor = Accent).clip(logo).background(AccentBrush), contentAlignment = Alignment.Center) {
                     Icon(Icons.Rounded.MusicNote, null, tint = Color.White, modifier = Modifier.size(48.dp))
                 }
                 Spacer(Modifier.height(24.dp))
-                Text("Benvenuto in Sonora".mt(), fontSize = if (Skin.metro) 34.sp else 28.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold)
+                Text("Benvenuto in Sonora".mt(), fontSize = if (Skin.metro) 34.sp else 28.sp, fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Normal else FontWeight.ExtraBold)
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "Inserisci l'indirizzo HTTPS del proxy Tailscale del tuo server di casa.",
@@ -157,10 +160,10 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
                     isError = error != null,
                 )
                 AnimatedVisibility(error != null) {
-                    Text(error ?: "", color = Accent, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+                    Text(error ?: "", color = if (Skin.nothing) NdRed else Accent, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
                 }
                 Spacer(Modifier.height(24.dp))
-                if (busy) CircularProgressIndicator(color = Accent)
+                if (busy) Spinner()
                 else GradientButton("Connetti", Icons.Rounded.PlayArrow, Modifier.fillMaxWidth()) {
                     val u = Api.normalize(url)
                     busy = true
@@ -178,22 +181,9 @@ fun SetupScreen(initial: String, onDone: (String) -> Unit) {
 // ---------------- Library ----------------
 
 @Composable
-fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, pivot: Boolean = true) {
-    if (Skin.metro) {
-        if (pivot) PivotHeaders(tabs, selected, onSelect, modifier)
-        // a row of square toggles: the chosen one filled with the accent colour
-        else Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            tabs.forEachIndexed { i, t ->
-                val bg by animateColorAsState(if (i == selected) MetroAccent else Color.Transparent, label = "tgl")
-                Box(
-                    Modifier.weight(1f).height(44.dp).background(bg).border(2.dp, if (i == selected) MetroAccent else Color.White)
-                        .clickable { onSelect(i) },
-                    contentAlignment = Alignment.Center,
-                ) { Text(t.lowercase(), fontSize = 11.sp, maxLines = 1, color = Color.White, softWrap = false) }
-            }
-        }
-        return
-    }
+fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    if (Skin.metro) return PivotHeaders(tabs, selected, onSelect, modifier)
+    if (Skin.nothing) return NdSegmented(tabs, selected, onSelect, modifier)
     // skeuomorphism: a brushed-metal rocker whose active key is pressed in and lit amber
     val skeu = Skin.skeu
     val r = if (skeu) 8.dp else 17.dp
@@ -222,6 +212,28 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
     }
 }
 
+/** Nothing segmented control: outlined pill, the chosen segment inverted (white, black text), mechanical slide. */
+@Composable
+private fun NdSegmented(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier) {
+    BoxWithConstraints(modifier.fillMaxWidth().height(40.dp).ndOutline().padding(3.dp)) {
+        val w = maxWidth / tabs.size
+        val x by animateDpAsState(w * selected, tween(200, easing = androidx.compose.animation.core.CubicBezierEasing(.25f, .1f, .25f, 1f)), label = "ndtab")
+        Box(Modifier.offset(x = x).width(w).fillMaxHeight().clip(CircleShape).background(Color.White))
+        Row(Modifier.fillMaxSize()) {
+            tabs.forEachIndexed { i, t ->
+                val c by animateColorAsState(if (i == selected) Color.Black else NdSecondary, tween(200), label = "ndtabc")
+                Box(Modifier.weight(1f).fillMaxHeight().clip(CircleShape).clickable { onSelect(i) }, contentAlignment = Alignment.Center) {
+                    NdLabel(t, color = c, size = if (tabs.size > 4) 10.sp else 11.sp)
+                }
+            }
+        }
+    }
+}
+
+/** The loading indicator of the current skin. */
+@Composable
+fun Spinner() = if (Skin.metro) MetroDots() else if (Skin.nothing) NdLoader() else CircularProgressIndicator(color = Accent)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
@@ -242,6 +254,7 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (Skin.metro) MetroTitle("Sonora · Libreria", Modifier.weight(1f))
+                else if (Skin.nothing) NdHero("Libreria", Modifier.weight(1f).padding(top = 8.dp))
                 else Text("Libreria", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), style = skeuText())
                 IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, "Impostazioni", tint = Dim) }
             }
@@ -252,6 +265,7 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
             AnimatedContent(
                 tab, label = "libtab", modifier = Modifier.fillMaxSize().pivotSwipe(tabs.size, tab, pick),
                 transitionSpec = {
+                    if (Skin.nothing) return@AnimatedContent fadeIn(tween(200)) togetherWith fadeOut(tween(150))
                     val dir = if (targetState > initialState) 1 else -1
                     (slideInHorizontally(tween(280)) { it / 5 * dir } + fadeIn(tween(280))) togetherWith
                         (slideOutHorizontally(tween(200)) { -it / 5 * dir } + fadeOut(tween(160)))
@@ -300,10 +314,9 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                         else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                             item {
                                 val mb = remember(all.size) { Downloads.sizeBytes() / 1_048_576 }
-                                Text(
-                                    "${if (all.size == 1) "1 brano" else "${all.size} brani"} • $mb MB • ${Downloads.folderName() ?: "memoria dell'app"}",
-                                    color = Dim, fontSize = 13.sp, modifier = Modifier.padding(start = 20.dp, top = 4.dp),
-                                )
+                                val info = "${if (all.size == 1) "1 brano" else "${all.size} brani"} • $mb MB • ${Downloads.folderName() ?: "memoria dell'app"}"
+                                if (Skin.nothing) NdLabel(info, Modifier.padding(start = 20.dp, top = 4.dp))
+                                else Text(info, color = Dim, fontSize = 13.sp, modifier = Modifier.padding(start = 20.dp, top = 4.dp))
                             }
                             item { PlayShuffleRow(songs) }
                             itemsIndexed(songs, key = { _, s -> s.id }) { i, s ->
@@ -327,7 +340,7 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                                         Icon(Icons.Rounded.Add, null, tint = if (Skin.skeu) Color(0xFF4A2A00) else Color.White, modifier = Modifier.size(30.dp))
                                     }
                                     Spacer(Modifier.width(14.dp))
-                                    Text("Nuova playlist".mt(), fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.SemiBold, fontSize = if (Skin.metro) 22.sp else 16.sp, style = skeuText())
+                                    Text("Nuova playlist".mt(), fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Normal else FontWeight.SemiBold, fontSize = if (Skin.metro) 22.sp else 16.sp, style = skeuText())
                                 }
                             }
                             items(pls, key = { it.id }) { p ->
@@ -340,10 +353,11 @@ fun LibraryScreen(nav: NavController, onSettings: () -> Unit) {
                                     Spacer(Modifier.width(14.dp))
                                     Column {
                                         Text(
-                                            p.name, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.SemiBold, fontSize = if (Skin.metro) 22.sp else 16.sp,
+                                            p.name, fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Normal else FontWeight.SemiBold, fontSize = if (Skin.metro) 22.sp else 16.sp,
                                             maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText(),
                                         )
-                                        Text(if (p.tracks.size == 1) "1 brano" else "${p.tracks.size} brani", color = Dim, fontSize = 13.sp)
+                                        val n = if (p.tracks.size == 1) "1 brano" else "${p.tracks.size} brani"
+                                        if (Skin.nothing) NdLabel(n, Modifier.padding(top = 2.dp), size = 10.sp) else Text(n, color = Dim, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -371,7 +385,8 @@ fun DownloadQueueHeader() {
             )
             TextButton(onClick = { Downloads.cancelAll() }) { Text("Annulla tutti", color = Accent) }
         }
-        LinearProgressIndicator(
+        if (Skin.nothing) SegmentedBar(p, Modifier.padding(top = 6.dp))
+        else LinearProgressIndicator(
             progress = { p }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
             color = Accent, trackColor = Card, drawStopIndicator = {},
         )
@@ -389,7 +404,8 @@ fun DownloadingRow(t: Track) {
         Column(Modifier.weight(1f)) {
             Text(t.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(6.dp))
-            if (raw == 0f) LinearProgressIndicator(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)), color = Accent2, trackColor = Card)
+            if (Skin.nothing) { if (raw == 0f) NdLoader() else SegmentedBar(p, height = 6.dp) }
+            else if (raw == 0f) LinearProgressIndicator(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)), color = Accent2, trackColor = Card)
             else LinearProgressIndicator(
                 progress = { p }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
                 color = Accent, trackColor = Card, drawStopIndicator = {},
@@ -468,11 +484,12 @@ fun SearchScreen(nav: NavController) {
         if (Skin.metro) {
             MetroTitle("Sonora", Modifier.padding(start = 20.dp, top = 22.dp))
             Text("cerca", fontSize = 56.sp, fontWeight = FontWeight.Light, modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
-        } else Text("Cerca", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp))
+        } else if (Skin.nothing) NdHero("Cerca", Modifier.padding(start = 20.dp, top = 20.dp, bottom = 16.dp))
+        else Text("Cerca", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp))
         SearchField(q, { q = it }, "Artisti, brani, album…", Modifier.padding(horizontal = 16.dp), big = true)
         SegmentedTabs(types, type, { type = it }, if (Skin.metro) Modifier.padding(top = 10.dp) else Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
-        Box(Modifier.fillMaxWidth().height(4.dp)) {
-            if (loading) { if (Skin.metro) MetroDots() else LinearProgressIndicator(Modifier.fillMaxWidth(), color = Accent, trackColor = Color.Transparent) }
+        Box(Modifier.fillMaxWidth().height(if (Skin.nothing) 12.dp else 4.dp)) {
+            if (loading) { if (Skin.metro) MetroDots() else if (Skin.nothing) NdLoader(Modifier.padding(start = 20.dp)) else LinearProgressIndicator(Modifier.fillMaxWidth(), color = Accent, trackColor = Color.Transparent) }
         }
         Box(Modifier.weight(1f).pivotSwipe(types.size, type) { type = it }) { when {
             q.isBlank() -> EmptyState(Icons.Rounded.Search, "Trova la tua musica", "Cerca tra milioni di brani, album, artisti e playlist di YouTube Music.")
@@ -512,6 +529,7 @@ fun BackButton(nav: NavController, modifier: Modifier = Modifier) {
         onClick = { nav.popBackStack() },
         modifier = modifier.statusBarsPadding().padding(8.dp).size(40.dp).then(
             if (Skin.skeu) Modifier.knob() else if (Skin.metro) Modifier.ring().background(Color.Black.copy(alpha = .5f))
+            else if (Skin.nothing) Modifier.clip(CircleShape).background(NdSurface).border(1.dp, NdBorder, CircleShape)
             else Modifier.clip(CircleShape).background(Color.Black.copy(alpha = .35f)),
         ),
     ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Indietro", tint = Color.White) }
@@ -535,7 +553,7 @@ fun <T> Loader(key: Any, load: suspend () -> T, content: @Composable (T) -> Unit
                 TextButton(onClick = { attempt++ }) { Text("Riprova", color = Accent) }
             }
         }
-        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { if (Skin.metro) MetroDots() else CircularProgressIndicator(color = Accent) }
+        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Spinner() }
     }
 }
 
@@ -544,7 +562,7 @@ fun <T> Loader(key: Any, load: suspend () -> T, content: @Composable (T) -> Unit
 fun CollectionScreen(
     nav: NavController, title: String, subtitle: String, thumb: String?, tracks: List<Track>,
     numbered: Boolean, onSubtitle: (() -> Unit)? = null,
-    art: @Composable (Modifier) -> Unit = { Artwork(thumb, it, corner(if (Skin.skeu) 4.dp else 18.dp)) },
+    art: @Composable (Modifier) -> Unit = { Artwork(thumb, it, corner(if (Skin.skeu) 4.dp else if (Skin.nothing) 16.dp else 18.dp)) },
     actions: @Composable () -> Unit = {}, localPlaylistId: String? = null,
 ) {
     val tint = rememberArtColor(thumb, Accent2.copy(alpha = .5f))
@@ -555,7 +573,7 @@ fun CollectionScreen(
             item {
                 Column(
                     Modifier.fillMaxWidth()
-                        .background(Brush.verticalGradient(if (Skin.skeu) listOf(tint.copy(alpha = .45f), Color.Transparent) else if (Skin.metro) listOf(Bg, Bg) else listOf(tint, Bg)))
+                        .background(Brush.verticalGradient(if (Skin.skeu) listOf(tint.copy(alpha = .45f), Color.Transparent) else if (Skin.metro || Skin.nothing) listOf(Bg, Bg) else listOf(tint, Bg)))
                         .statusBarsPadding().padding(top = 48.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -564,22 +582,24 @@ fun CollectionScreen(
                     val p = (with(density) { off.toDp().value } / 260f).coerceIn(0f, 1f)
                     art(
                         Modifier.size(240.dp).graphicsLayer { scaleX = 1f - p * .25f; scaleY = 1f - p * .25f; alpha = 1f - p; translationY = off * .5f }
-                            .shadow(if (Skin.metro) 0.dp else 28.dp, corner(if (Skin.skeu) 4.dp else 18.dp)),
+                            .shadow(if (Skin.metro || Skin.nothing) 0.dp else 28.dp, corner(if (Skin.skeu) 4.dp else 18.dp)),
                     )
                     Spacer(Modifier.height(20.dp))
                     Text(
-                        title.mt(), fontSize = if (Skin.metro) 32.sp else 24.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold,
+                        title.mt(), fontSize = if (Skin.metro) 32.sp else if (Skin.nothing) 28.sp else 24.sp,
+                        fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Medium else FontWeight.ExtraBold,
                         textAlign = TextAlign.Center, style = skeuText(), modifier = Modifier.padding(horizontal = 24.dp),
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        subtitle, color = if (onSubtitle != null) (if (Skin.metro) MetroAccent else Color.White.copy(alpha = .85f)) else Dim, fontSize = 15.sp,
+                        subtitle, color = if (onSubtitle != null) (if (Skin.metro) MetroAccent else if (Skin.nothing) NdPrimary else Color.White.copy(alpha = .85f)) else Dim, fontSize = 15.sp,
                         fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 24.dp).clip(RoundedCornerShape(8.dp))
                             .then(if (onSubtitle != null) Modifier.clickable(onClick = onSubtitle) else Modifier).padding(4.dp),
                     )
                     val min = tracks.sumOf { it.duration } / 60
-                    Text((if (tracks.size == 1) "1 brano" else "${tracks.size} brani") + if (min > 0) " • $min min" else "", color = Dim, fontSize = 13.sp)
+                    val count = (if (tracks.size == 1) "1 brano" else "${tracks.size} brani") + if (min > 0) " • $min min" else ""
+                    if (Skin.nothing) NdLabel(count, Modifier.padding(top = 4.dp)) else Text(count, color = Dim, fontSize = 13.sp)
                     Spacer(Modifier.height(14.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         actions()
@@ -628,7 +648,7 @@ fun HeartButton(saved: Boolean, onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.size(48.dp).roundButton()) {
         Icon(
             if (saved) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (saved) "Rimuovi dalla libreria" else "Salva in libreria",
-            tint = if (saved) Accent else Color.White, modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
+            tint = if (saved) (if (Skin.nothing) NdRed else Accent) else Color.White, modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
         )
     }
 }
@@ -716,8 +736,10 @@ fun ArtistScreen(id: String, nav: NavController) {
                         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Bg.copy(alpha = .4f), Bg))))
                         Row(Modifier.align(Alignment.BottomStart).padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                a.name.mt(), fontSize = if (Skin.metro) 46.sp else 36.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold,
-                                lineHeight = if (Skin.metro) 48.sp else androidx.compose.ui.unit.TextUnit.Unspecified,
+                                a.name.mt(), fontSize = if (Skin.metro) 46.sp else if (Skin.nothing) 44.sp else 36.sp,
+                                fontWeight = if (Skin.metro) FontWeight.Light else if (Skin.nothing) FontWeight.Bold else FontWeight.ExtraBold,
+                                lineHeight = if (Skin.metro) 48.sp else if (Skin.nothing) 46.sp else androidx.compose.ui.unit.TextUnit.Unspecified,
+                                fontFamily = if (Skin.nothing) NdDot else null,
                                 style = skeuText(), modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
                             )
                             HeartButton(Lib.hasArtist(a.id)) { Lib.scope.launch { Lib.toggleArtist(a) } }
@@ -750,7 +772,7 @@ fun ArtistScreen(id: String, nav: NavController) {
 }
 
 @Composable
-fun SectionTitle(t: String) = Text(
+fun SectionTitle(t: String) = if (Skin.nothing) NdLabel(t, Modifier.padding(start = 20.dp, top = 36.dp, bottom = 10.dp)) else Text(
     t.mt(), fontSize = if (Skin.metro) 30.sp else 20.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.Bold,
     style = skeuText(), modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp),
 )
@@ -763,7 +785,9 @@ private val profileGradients = listOf(
 )
 
 fun profileBrush(id: String): Brush = profileGradients[Math.floorMod(id.hashCode(), profileGradients.size)].let {
-    if (Skin.metro) androidx.compose.ui.graphics.SolidColor(it[0]) else Brush.linearGradient(it) // flat tiles in Modern UI
+    if (Skin.metro) androidx.compose.ui.graphics.SolidColor(it[0]) // flat tiles in Modern UI
+    else if (Skin.nothing) androidx.compose.ui.graphics.SolidColor(NdSurface) // monochrome in Nothing
+    else Brush.linearGradient(it)
 }
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -785,14 +809,15 @@ fun ProfileScreen(onPick: (String) -> Unit) {
     }
 
     Column(
-        Modifier.fillMaxSize().then(if (Skin.skeu || Skin.metro) Modifier else Modifier.background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg)))).statusBarsPadding(),
+        Modifier.fillMaxSize().then(if (Skin.skeu || Skin.metro) Modifier else if (Skin.nothing) Modifier.dotGrid() else Modifier.background(Brush.verticalGradient(listOf(Accent2.copy(alpha = .30f), Bg, Bg)))).statusBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(64.dp))
         if (Skin.metro) Text("chi ascolta?", fontSize = 44.sp, fontWeight = FontWeight.Light)
+        else if (Skin.nothing) NdHero("Chi ascolta?", size = 46.sp)
         else Text("Chi ascolta?", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, style = skeuText())
         Spacer(Modifier.height(6.dp))
-        Text("Ogni profilo ha la sua libreria e le sue playlist", color = Dim, fontSize = 15.sp, textAlign = TextAlign.Center)
+        Text("Ogni profilo ha la sua libreria e le sue playlist", color = if (Skin.nothing) NdDisabled else Dim, fontSize = 15.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(36.dp))
         val list = profiles
         when {
@@ -800,7 +825,7 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                 EmptyState(Icons.Rounded.WifiOff, "Server non raggiungibile", "Controlla che Tailscale sia attivo.")
                 TextButton(onClick = { attempt++ }) { Text("Riprova", color = Accent) }
             }
-            list == null -> if (Skin.metro) MetroDots() else CircularProgressIndicator(color = Accent)
+            list == null -> Spinner()
             else -> LazyVerticalGrid(GridCells.Fixed(2), contentPadding = PaddingValues(horizontal = 24.dp), modifier = Modifier.weight(1f)) {
                 itemsIndexed(list, key = { _, p -> p.id }) { i, p ->
                     PopIn(i) {
@@ -808,7 +833,10 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                             p.name, Modifier.combinedClickable(onLongClick = { deleting = p }, onClick = { onPick(p.id) }),
                         ) {
                             Box(Modifier.fillMaxSize().background(profileBrush(p.id)), contentAlignment = Alignment.Center) {
-                                Text(p.name.take(1).uppercase(), fontSize = if (Skin.metro) 56.sp else 48.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold, color = Color.White)
+                                Text(
+                                    p.name.take(1).uppercase(), fontSize = if (Skin.metro) 56.sp else if (Skin.nothing) 60.sp else 48.sp,
+                                    fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.ExtraBold, color = Color.White, fontFamily = if (Skin.nothing) NdDot else null,
+                                )
                             }
                         }
                     }
@@ -819,7 +847,7 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                             Box(
                                 Modifier.fillMaxSize().then(
                                     if (Skin.skeu) Modifier.background(Brush.radialGradient(listOf(Color(0xFF4A433C), Color(0xFF221E1A))))
-                                    else if (Skin.metro) Modifier.border(2.dp, Color.White) else Modifier.background(Card),
+                                    else if (Skin.metro) Modifier.border(2.dp, Color.White) else if (Skin.nothing) Modifier else Modifier.background(Card),
                                 ),
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -829,7 +857,8 @@ fun ProfileScreen(onPick: (String) -> Unit) {
                     }
                 }
                 if (list.isNotEmpty()) item(span = { GridItemSpan(2) }, key = "hint") {
-                    Text(
+                    if (Skin.nothing) Box(Modifier.padding(top = 24.dp), contentAlignment = Alignment.Center) { NdLabel("Tieni premuto un profilo per eliminarlo", color = NdDisabled, size = 10.sp) }
+                    else Text(
                         "Tieni premuto un profilo per eliminarlo", color = Dim.copy(alpha = .7f), fontSize = 13.sp,
                         textAlign = TextAlign.Center, modifier = Modifier.padding(top = 24.dp),
                     )
@@ -861,7 +890,8 @@ private fun PopIn(index: Int, content: @Composable () -> Unit) {
     val s by androidx.compose.animation.core.animateFloatAsState(if (shown) 1f else .6f, spring(dampingRatio = .55f, stiffness = 300f), label = "pop")
     val a by androidx.compose.animation.core.animateFloatAsState(if (shown) 1f else 0f, tween(250), label = "popa")
     val metro = Skin.metro
-    Box(Modifier.graphicsLayer { if (metro) { rotationX = (1f - a) * 90f; cameraDistance = 10 * density } else { scaleX = s; scaleY = s }; alpha = a }) { content() }
+    val fadeOnly = Skin.nothing // Nothing: no bounce, elements just fade in
+    Box(Modifier.graphicsLayer { if (metro) { rotationX = (1f - a) * 90f; cameraDistance = 10 * density } else if (!fadeOnly) { scaleX = s; scaleY = s }; alpha = a }) { content() }
 }
 
 @Composable
@@ -883,9 +913,11 @@ private fun ProfileBubble(name: String, click: Modifier, avatar: @Composable () 
                     },
             ) { avatar() }
         } else if (Skin.metro) Box(Modifier.size(132.dp).then(click)) { avatar() } // square live tile
+        else if (Skin.nothing) Box(Modifier.size(116.dp).clip(CircleShape).border(1.dp, NdBorderVisible, CircleShape).then(click)) { avatar() }
         else Box(Modifier.size(116.dp).shadow(18.dp, CircleShape).clip(CircleShape).then(click)) { avatar() }
         Spacer(Modifier.height(if (Skin.metro) 6.dp else 12.dp))
-        Text(
+        if (Skin.nothing) NdLabel(name, color = NdPrimary, size = 12.sp)
+        else Text(
             name.mt(), fontSize = if (Skin.metro) 20.sp else 17.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis, style = skeuText(),
         )

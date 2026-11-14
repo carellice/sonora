@@ -64,6 +64,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -190,7 +192,18 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
                         exit = slideOutVertically { it } + fadeOut(),
                     ) { MiniPlayer { playerOpen = true } }
                     val skeu = Skin.skeu
-                    if (Skin.metro) MetroAppBar(route, nav) { settings = true } else NavigationBar(
+                    if (Skin.metro) MetroAppBar(route, nav) { settings = true }
+                    else if (Skin.nothing) NothingNavBar(
+                        listOf("library" to "Libreria", "search" to "Cerca"),
+                        isOn = { r -> route == r || (r == "library" && route !in setOf("library", "search") && nav.previousBackStackEntry?.destination?.route == "library") },
+                    ) { r ->
+                        nav.navigate(r) {
+                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    else NavigationBar(
                         containerColor = if (skeu) Color.Transparent else Bg, tonalElevation = 0.dp,
                         modifier = if (skeu) Modifier.metal(RectangleShape, 12.dp) else Modifier,
                     ) {
@@ -224,10 +237,11 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
             NavHost(
                 nav, "library", Modifier.padding(bottom = pad.calculateBottomPadding()), // screens handle the status bar themselves
                 // Modern UI: the page turnstiles in by itself (Turnstile), the navigator only cross-fades quickly
-                enterTransition = { if (Skin.metro) fadeIn(tween(120)) else slideInHorizontally(tween(300)) { it / 8 } + fadeIn(tween(300)) },
+                // Nothing: pages only fade, no movement
+                enterTransition = { if (Skin.metro) fadeIn(tween(120)) else if (Skin.nothing) fadeIn(tween(250)) else slideInHorizontally(tween(300)) { it / 8 } + fadeIn(tween(300)) },
                 exitTransition = { fadeOut(tween(if (Skin.metro) 120 else 200)) },
                 popEnterTransition = { fadeIn(tween(if (Skin.metro) 120 else 300)) },
-                popExitTransition = { if (Skin.metro) fadeOut(tween(120)) else slideOutHorizontally(tween(250)) { it / 8 } + fadeOut(tween(250)) },
+                popExitTransition = { if (Skin.metro) fadeOut(tween(120)) else if (Skin.nothing) fadeOut(tween(200)) else slideOutHorizontally(tween(250)) { it / 8 } + fadeOut(tween(250)) },
             ) {
                 composable("library") { Turnstile { LibraryScreen(nav) { settings = true } } }
                 composable("search") { Turnstile { SearchScreen(nav) } }
@@ -256,13 +270,22 @@ fun Main(onChangeProfile: () -> Unit, onChangeServer: () -> Unit) {
         title = { Text("Impostazioni".mt()) },
         text = {
             Column {
-                Text("Stile grafica", fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(8.dp))
-                SegmentedTabs(listOf("Moderno", "Skeuomorfismo", "Modern UI"), Skin.styles.indexOf(Skin.style), { Skin.set(Skin.styles[it]) }, pivot = false)
+                if (Skin.nothing) NdLabel("Stile grafica") else Text("Stile grafica", fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(4.dp))
+                // a list, not tabs: four names don't fit side by side
+                Skin.styles.zip(listOf("Moderno", "Skeuomorfismo", "Modern UI", "Nothing")).forEach { (s, label) ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { Skin.set(s) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(Skin.style == s, onClick = { Skin.set(s) }, colors = RadioButtonDefaults.colors(selectedColor = Accent, unselectedColor = Dim))
+                        Text(label.mt(), fontSize = 15.sp)
+                    }
+                }
                 Spacer(Modifier.height(16.dp))
                 Text("Server: ${Api.base}", color = Dim, fontSize = 13.sp)
                 Spacer(Modifier.height(16.dp))
-                Text("Download", fontWeight = FontWeight.SemiBold)
+                if (Skin.nothing) NdLabel("Download") else Text("Download", fontWeight = FontWeight.SemiBold)
                 Text(Downloads.folderName()?.let { "Cartella: $it" } ?: "Memoria dell'app (si cancella disinstallando l'app)", color = Dim, fontSize = 13.sp)
                 TextButton(onClick = { pickFolder.launch(null) }) { Text("Scegli una cartella del telefono".mt(), color = Accent, fontSize = 16.sp) }
                 if (Downloads.folder != null) TextButton(onClick = { Downloads.chooseFolder(null) }) { Text("Usa la memoria dell'app".mt(), color = Accent, fontSize = 16.sp) }
@@ -351,7 +374,7 @@ private fun MenuItem(icon: ImageVector, text: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (Skin.metro) return@Row Text(text.lowercase(), fontSize = 21.sp, fontWeight = FontWeight.Light)
-        Icon(icon, null, tint = if (Skin.skeu) Accent else Color.White)
+        Icon(icon, null, tint = if (Skin.skeu) Accent else if (Skin.nothing) NdSecondary else Color.White)
         Spacer(Modifier.width(18.dp))
         Text(text, fontSize = 15.sp, style = skeuText())
     }

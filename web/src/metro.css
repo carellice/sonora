@@ -68,7 +68,7 @@ html.metro .seg-item.on { color: #fff; }
 html.metro .seg-pill { display: none; }
 /* in the settings it is a row of square toggles */
 html.metro .settings .seg { margin: 0; padding: 0; gap: 6px; overflow: visible; }
-html.metro .settings .seg-item { flex: 1; height: 44px; border-radius: 0; font-size: 13px; border: 2px solid #fff; color: #fff; padding: 0; transition: background .2s; }
+html.metro .settings .seg-item { flex: 1; height: 44px; border-radius: 0; font-size: 11px; border: 2px solid #fff; color: #fff; padding: 0; transition: background .2s; }
 html.metro .settings .seg-item.on { background: var(--accent); border-color: var(--accent); }
 
 html.metro .btn { border-radius: 0; font-weight: 400; font-size: 17px; text-transform: lowercase; }

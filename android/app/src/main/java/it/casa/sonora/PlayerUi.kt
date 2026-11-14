@@ -123,6 +123,7 @@ fun MiniPlayer(onOpen: () -> Unit) {
     val src = remember { MutableInteractionSource() }
     if (Skin.skeu) return SkeuMiniPlayer(t, pos, dur, src, onOpen)
     if (Skin.metro) return MetroMiniPlayer(t, pos, dur, src, onOpen)
+    if (Skin.nothing) return NdMiniPlayer(t, pos, dur, src, onOpen)
     Box(
         Modifier.padding(horizontal = 8.dp, vertical = 6.dp).fillMaxWidth().pressScale(src)
             .shadow(16.dp, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp))
@@ -205,19 +206,45 @@ private fun MetroMiniPlayer(t: Track, pos: Long, dur: Long, src: MutableInteract
     }
 }
 
+/** Nothing: flat #111 card with a thin border, mono artist label, white play disc, segmented progress. */
+@Composable
+private fun NdMiniPlayer(t: Track, pos: Long, dur: Long, src: MutableInteractionSource, onOpen: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        Modifier.padding(horizontal = 8.dp, vertical = 6.dp).fillMaxWidth().clip(shape).background(NdSurface).border(1.dp, NdBorder, shape)
+            .clickable(interactionSource = src, indication = ripple(), onClick = onOpen)
+            .pointerInput(Unit) { detectVerticalDragGestures { _, dy -> if (dy < -12) onOpen() } }
+            .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 10.dp),
+    ) {
+        Row(Modifier.swipeTracks(), verticalAlignment = Alignment.CenterVertically) {
+            AnimatedContent(t, label = "miniart", transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }) {
+                Artwork(it.thumb, Modifier.size(44.dp), RoundedCornerShape(8.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Marquee(t.title, size = 14)
+                NdLabel(t.artist, Modifier.padding(top = 2.dp), size = 10.sp)
+            }
+            PlayPauseIcon(Modifier.size(40.dp), small = true)
+            IconButton(onClick = { Playback.next() }) { Icon(Icons.Rounded.SkipNext, "Successivo", tint = Color.White) }
+        }
+        SegmentedBar(if (dur > 0) pos.toFloat() / dur else 0f, Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp), height = 3.dp)
+    }
+}
+
 @Composable
 fun PlayPauseIcon(modifier: Modifier, small: Boolean) {
     val playing = Playback.isPlaying
     val skeu = Skin.skeu
     // skeuomorphism: dark icon on the metal faceplate (small), amber-lit knob in a metal ring (big)
-    val fg = when { skeu && small -> MetalText; skeu -> Amber; small || Skin.metro -> Color.White; else -> Bg }
+    val fg = when { skeu && small -> MetalText; skeu -> Amber; Skin.nothing -> Color.Black; small || Skin.metro -> Color.White; else -> Bg }
     Box(
         modifier.then(
             when {
                 skeu && !small -> Modifier.clip(CircleShape).background(Brush.verticalGradient(listOf(Color(0xFFE0E2E5), Color(0xFF6A6C70)))).padding(4.dp)
                     .clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF4A443E), Color(0xFF1A1714))))
                 Skin.metro && !small -> Modifier.ring()
-                else -> Modifier.clip(CircleShape).background(if (small) Color.Transparent else Color.White)
+                else -> Modifier.clip(CircleShape).background(if (small && !Skin.nothing) Color.Transparent else Color.White)
             },
         ).clickable { Playback.toggle() },
         contentAlignment = Alignment.Center,
@@ -260,7 +287,8 @@ fun FullPlayer(onClose: () -> Unit) {
     val skeu = Skin.skeu
     // skeuomorphism: the sleeve stays put and the record slides out instead
     val metro = Skin.metro
-    val artScale by animateFloatAsState(if (Playback.isPlaying || skeu || metro) 1f else .86f, spring(dampingRatio = .55f, stiffness = 260f), label = "art")
+    val nd = Skin.nothing
+    val artScale by animateFloatAsState(if (Playback.isPlaying || skeu || metro || nd) 1f else .86f, spring(dampingRatio = .55f, stiffness = 260f), label = "art")
     val vinylOut by animateFloatAsState(if (Playback.isPlaying) 1f else 0f, spring(dampingRatio = .6f, stiffness = 120f), label = "vinyl")
     val lightText = if (skeu) Color(0xFFCFC3B3) else Color.White.copy(alpha = .7f)
 
@@ -271,6 +299,7 @@ fun FullPlayer(onClose: () -> Unit) {
             .then(
                 if (skeu) Modifier.leather().background(Brush.verticalGradient(0f to tint.copy(alpha = .35f), .6f to Color.Transparent))
                 else if (metro) Modifier
+                else if (nd) Modifier.dotGrid(Color(0xFF161616))
                 else Modifier.background(Brush.verticalGradient(listOf(tint, tint.copy(alpha = .55f), Bg))),
             )
             .pointerInput(Unit) {
@@ -287,6 +316,7 @@ fun FullPlayer(onClose: () -> Unit) {
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (skeu) Text("IN RIPRODUZIONE", fontSize = 11.sp, letterSpacing = 1.5.sp, color = Amber, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, style = glow())
                     else if (metro) MetroTitle("Sonora · In riproduzione")
+                    else if (nd) NdLabel("In riproduzione", size = 11.sp)
                     else Text("IN RIPRODUZIONE", fontSize = 11.sp, letterSpacing = 1.5.sp, color = Color.White.copy(alpha = .7f))
                     if (!metro) Text(t.album ?: t.artist, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
@@ -323,6 +353,7 @@ fun FullPlayer(onClose: () -> Unit) {
                     )
                     Artwork(cur.thumb, Modifier.fillMaxWidth().aspectRatio(1f))
                 }
+                else if (nd) Artwork(cur.thumb, Modifier.fillMaxWidth().aspectRatio(1f).border(1.dp, NdBorder, RoundedCornerShape(16.dp)), RoundedCornerShape(16.dp))
                 else Artwork(
                     cur.thumb,
                     Modifier.fillMaxWidth().aspectRatio(1f).graphicsLayer { scaleX = artScale; scaleY = artScale }
@@ -340,6 +371,9 @@ fun FullPlayer(onClose: () -> Unit) {
                         Marquee(t.title, size = 20, weight = FontWeight.Bold, color = LcdText, style = glow(), mono = true)
                         Spacer(Modifier.height(2.dp))
                         Marquee(t.artist, size = 15, color = LcdText.copy(alpha = .72f), mono = true)
+                    } else if (nd) {
+                        Marquee(t.title, size = 24, weight = FontWeight.Medium)
+                        NdLabel(t.artist, Modifier.padding(top = 4.dp), size = 12.sp)
                     } else if (metro) {
                         Marquee(t.title.lowercase(), size = 26, weight = FontWeight.Light)
                         Text((t.album ?: t.artist).lowercase(), fontSize = 15.sp, color = MetroSubtle, maxLines = 1)
@@ -354,13 +388,25 @@ fun FullPlayer(onClose: () -> Unit) {
                 IconButton(onClick = { Lib.scope.launch { Lib.toggleSong(t) } }) {
                     Icon(
                         if (saved) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Libreria",
-                        tint = if (saved) Accent else Color.White, modifier = Modifier.size(28.dp).graphicsLayer { scaleX = hs; scaleY = hs },
+                        tint = if (saved) (if (nd) NdRed else Accent) else Color.White, modifier = Modifier.size(28.dp).graphicsLayer { scaleX = hs; scaleY = hs },
                     )
                 }
             }
             Spacer(Modifier.height(14.dp))
             val progress = if (dragging) dragValue else if (dur > 0) pos.toFloat() / dur else 0f
-            Slider(
+            // Nothing: the elapsed time is the hero (dot-matrix), the seek bar is segmented
+            if (nd) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    NdHero(fmtMs(if (dragging) (dragValue * dur).toLong() else pos), size = 56.sp)
+                    Spacer(Modifier.weight(1f))
+                    NdLabel(if (dur > 0) fmtMs(dur) else "--:--", Modifier.padding(bottom = 4.dp), size = 12.sp)
+                }
+                Spacer(Modifier.height(6.dp))
+                SegmentedSeek(
+                    progress, onDrag = { dragging = true; dragValue = it },
+                    onRelease = { Playback.seek((it * dur).toLong()); dragging = false },
+                )
+            } else Slider(
                 value = progress.coerceIn(0f, 1f),
                 onValueChange = { dragging = true; dragValue = it },
                 onValueChangeFinished = { Playback.seek((dragValue * dur).toLong()); dragging = false },
@@ -368,7 +414,7 @@ fun FullPlayer(onClose: () -> Unit) {
                 else if (metro) SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = MetroAccent, inactiveTrackColor = Color(0xFF333333))
                 else SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = .2f)),
             )
-            Row(Modifier.fillMaxWidth()) {
+            if (!nd) Row(Modifier.fillMaxWidth()) {
                 val ff = if (skeu) FontFamily.Monospace else null
                 Text(fmtMs(if (dragging) (dragValue * dur).toLong() else pos), fontSize = 12.sp, color = lightText, fontFamily = ff)
                 Spacer(Modifier.weight(1f))
@@ -376,7 +422,7 @@ fun FullPlayer(onClose: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             // skeuomorphism: chrome buttons on a brushed-metal console, toggles lit amber when on
-            val on = if (skeu) Color(0xFFE08400) else Accent
+            val on = if (skeu) Color(0xFFE08400) else if (nd) NdRed else Accent
             val off = if (skeu) MetalText else if (metro) Color(0xFF777777) else Color.White.copy(alpha = .75f)
             val main = if (skeu) MetalText else Color.White
             Row(
@@ -385,7 +431,7 @@ fun FullPlayer(onClose: () -> Unit) {
             ) {
                 Transport(Icons.Rounded.Shuffle, "Casuale", 48, 24, if (Playback.shuffle) on else off) { Playback.toggleShuffle() }
                 Transport(Icons.Rounded.SkipPrevious, "Precedente", 60, 42, main) { Playback.previous() }
-                PlayPauseIcon(Modifier.size(if (skeu) 84.dp else 76.dp).then(if (metro) Modifier else Modifier.shadow(20.dp, CircleShape)), small = false)
+                PlayPauseIcon(Modifier.size(if (skeu) 84.dp else 76.dp).then(if (metro || nd) Modifier else Modifier.shadow(20.dp, CircleShape)), small = false)
                 Transport(Icons.Rounded.SkipNext, "Successivo", 60, 42, main) { Playback.next() }
                 Transport(
                     if (Playback.repeat == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Ripeti", 48, 24,
@@ -397,6 +443,7 @@ fun FullPlayer(onClose: () -> Unit) {
                 Modifier.align(Alignment.CenterHorizontally)
                     .then(
                         if (skeu) Modifier.metal(RoundedCornerShape(10.dp), 4.dp) else if (metro) Modifier.border(2.dp, Color.White)
+                        else if (nd) Modifier.ndOutline().clip(CircleShape)
                         else Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = .08f)),
                     )
                     .clickable { showQueue = true }.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -404,7 +451,8 @@ fun FullPlayer(onClose: () -> Unit) {
             ) {
                 Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, tint = main, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Prossimi brani".mt(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = main, style = if (skeu) OnMetal else androidx.compose.ui.text.TextStyle.Default)
+                if (nd) NdLabel("Prossimi brani", color = NdPrimary)
+                else Text("Prossimi brani".mt(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = main, style = if (skeu) OnMetal else androidx.compose.ui.text.TextStyle.Default)
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -412,7 +460,8 @@ fun FullPlayer(onClose: () -> Unit) {
 
     if (showQueue) ModalBottomSheet(onDismissRequest = { showQueue = false }, containerColor = CardHi) {
         val q = remember(Playback.queueVersion) { Playback.upNext() }
-        Text(
+        if (Skin.nothing) NdLabel("Prossimi brani", Modifier.padding(start = 24.dp, bottom = 12.dp))
+        else Text(
             "Prossimi brani".mt(), fontSize = if (Skin.metro) 30.sp else 20.sp, fontWeight = if (Skin.metro) FontWeight.Light else FontWeight.Bold,
             modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
         )
