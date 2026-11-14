@@ -1,3 +1,5 @@
+<p align="center"><img src="web/public/icon-512.png" width="128" alt="Icona di Sonora"></p>
+
 # Sonora
 
 La tua musica da YouTube Music, in streaming **dal tuo server di casa** (CasaOS, Raspberry Pi o
