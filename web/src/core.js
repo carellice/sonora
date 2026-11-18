@@ -54,6 +54,33 @@ export const api = {
 }
 export const streamUrl = (id) => `/api/stream/${enc(id)}`
 
+// ---------- downloads ----------
+// The browser saves each song as a file (title, artist, album and cover written in it by the server), one at a time.
+// Fetched as a blob first: the server builds the file before sending it, and one save per blob avoids the
+// "multiple downloads" block of plain links.
+let dlQueue = Promise.resolve()
+export function download(tracks) {
+  const n = tracks.length
+  toast(n === 1 ? `Download: ${tracks[0].title}` : `Download di ${n} brani…`)
+  let failed = 0
+  tracks.forEach((t, i) => {
+    dlQueue = dlQueue.then(async () => {
+      try {
+        const r = await fetch(`/api/download/${enc(t.id)}?title=${enc(t.title)}&artist=${enc(t.artist || '')}` +
+          `&album=${enc(t.album || '')}&thumb=${enc(t.thumb || '')}`)
+        if (!r.ok) throw new Error(r.status)
+        const url = URL.createObjectURL(await r.blob())
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${[t.artist, t.title].filter(Boolean).join(' - ')}.m4a`.replace(/[\\/:*?"<>|]/g, '_')
+        a.click()
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+      } catch { failed++ }
+      if (i === n - 1) toast(failed ? `Download non riuscito: ${failed} di ${n}` : n === 1 ? 'Download completato' : `${n} brani scaricati`)
+    })
+  })
+}
+
 // ---------- toast ----------
 export const toastStore = createStore({ msg: null, key: 0 })
 let toastTimer

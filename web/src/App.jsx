@@ -6,7 +6,7 @@ import {
   AlbumScreen, ArtistScreen, LibraryScreen, LocalPlaylistScreen, PlaylistScreen, ProfileScreen, SearchScreen, profileGradient,
 } from './screens.jsx'
 import {
-  api, closePlayer, leaveProfile, lib, navStore, navigate, player, profile, sessionStore, setTab, toast, toastStore, uiStore, useStore,
+  api, closePlayer, download, leaveProfile, lib, navStore, navigate, player, profile, sessionStore, setTab, toast, toastStore, uiStore, useStore,
 } from './core.js'
 
 function useWide() {
@@ -162,6 +162,7 @@ function TrackMenu() {
           {lib.hasSong(t.id) ? 'Rimuovi dalla libreria' : 'Salva in libreria'}
         </MenuItem>
         <MenuItem icon="playlist_add" onClick={() => { close(); uiStore.set({ addTo: t }) }}>Aggiungi a playlist</MenuItem>
+        <MenuItem icon="download" onClick={() => { download([t]); close() }}>Scarica</MenuItem>
         {menu.localPlaylistId && <MenuItem icon="remove_circle_outline" onClick={() => { lib.removeFromPlaylist(menu.localPlaylistId, t.id); close() }}>Rimuovi da questa playlist</MenuItem>}
         {t.albumId && <MenuItem icon="album" onClick={() => go({ name: 'album', id: t.albumId })}>Vai all'album</MenuItem>}
         {t.artistId && <MenuItem icon="person" onClick={() => go({ name: 'artist', id: t.artistId })}>Vai all'artista</MenuItem>}

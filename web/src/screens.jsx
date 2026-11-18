@@ -4,7 +4,7 @@ import {
   AlbumCard, ArtistRow, Artwork, Dialog, EmptyState, HeartButton, Icon, IconButton, Mosaic,
   NameDialog, PlayShuffle, SearchField, SegmentedTabs, Spinner, TrackRow, useArtColor, useLibrary,
 } from './components.jsx'
-import { api, enterProfile, goBack, has, lib, libStore, navigate, player, toast, useStore } from './core.js'
+import { api, download, enterProfile, goBack, has, lib, libStore, navigate, player, toast, useStore } from './core.js'
 
 // ---------------- Profiles ----------------
 
@@ -237,7 +237,8 @@ function Collection({ title, subtitle, onSubtitle, thumb, art, tracks, numbered,
           <h2>{title}</h2>
           <button className={`collection-sub ${onSubtitle ? 'link' : ''}`} onClick={onSubtitle} disabled={!onSubtitle}>{subtitle}</button>
           <div className="dim small">{tracks.length === 1 ? '1 brano' : `${tracks.length} brani`}{min > 0 && ` • ${min} min`}</div>
-          <div className="collection-actions">{actions}</div>
+          <div className="collection-actions">{actions}
+            <IconButton name="download" label="Scarica tutto" className="round" onClick={() => download(tracks)} /></div>
           <PlayShuffle tracks={tracks} />
         </div>
       </div>
